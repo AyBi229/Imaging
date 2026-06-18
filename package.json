@@ -5,5 +5,8 @@
     "express": "^5.2.1",
     "multer": "^2.2.0",
     "ssh2": "^1.17.0"
+  },
+  "scripts": {
+    "start": "node server.js"
   }
 }

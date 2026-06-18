@@ -27,6 +27,4 @@ app.post('/search-product-images', searchProductImages);
 // ── New: Image proxy (avoids CORS when loading third-party images) ──
 app.get('/proxy-image', proxyImage);
 
-// app.listen removed for Render
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(3000, () => console.log('Backend server running on port 3000'));

@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: imaging-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
