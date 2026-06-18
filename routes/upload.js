@@ -47,20 +47,8 @@ async function uploadToWp(req, res) {
                         return res.status(500).json({ success: false, error: sqlOutput.trim() });
                     }
 
-                    // Step 3: Generate WordPress attachment metadata via PHP
-                    const regenCmd = `php -r '
-define("ABSPATH", "${WP_PATH}/");
-require "${WP_PATH}/wp-load.php";
-$att_id = (int) $wpdb->get_var($wpdb->prepare(
-    "SELECT ID FROM wp_posts WHERE post_name = %s AND post_type = \"attachment\" ORDER BY ID DESC LIMIT 1",
-    "${postSlug}"
-));
-if (!$att_id) { echo "ERROR: attachment not found\n"; exit(1); }
-require_once ABSPATH . "wp-admin/includes/image.php";
-$meta = wp_generate_attachment_metadata($att_id, "${blobUrl}");
-wp_update_attachment_metadata($att_id, $meta);
-echo "OK:$att_id\n";
-' 2>/dev/null`;
+                                        // Step 3: Regenerate metadata using built-in WP-CLI
+                    const regenCmd = `cd ${WP_PATH} && wp media regenerate $(wp post list --post_type=attachment --name="${postSlug}" --format=ids) --yes`;
 
                     conn.exec(regenCmd, (regenErr, regenStream) => {
                         if (regenErr) {
