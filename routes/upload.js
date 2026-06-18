@@ -20,6 +20,7 @@ async function uploadToWp(req, res) {
         // Step 1: Upload image to Vercel Blob
         const blob = await put(file.originalname, file.buffer, {
             access: 'public',
+  allowOverwrite: true
         });
 
         const fileName = `${sku}.webp`;
