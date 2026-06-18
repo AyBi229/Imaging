@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const SSH_CONFIG = {
-    host: 'store.local',
+    host: '51.77.102.88',
     username: 'teledyne',
     privateKey: fs.readFileSync(path.join(__dirname, '../keys/id_ed25519')),
 };
