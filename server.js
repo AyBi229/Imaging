@@ -1,4 +1,6 @@
 require('dotenv').config();
+const { put } = require('@vercel/blob');
+
 const express = require('express');
 const multer  = require('multer');
 const path    = require('path');
