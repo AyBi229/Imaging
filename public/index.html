@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WooCommerce SKU Image Pipeline</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+    <h2>WooCommerce SKU Image Pipeline</h2>
+
+    <!-- MODULE 1: SKU Image Finder -->
+    <div class="finder-section">
+        <h3>Find Product Image by SKU</h3>
+        <p>Search the web for the best matching product image, pick one, then load it directly into the pipeline below.</p>
+        <div class="finder-row">
+            <input type="text" id="skuSearchInput" placeholder="e.g. CRD-TC5A-2SC1B-B" autocomplete="off" spellcheck="false">
+            <button id="searchBtn">Search</button>
+        </div>
+        <div id="searchStatus"></div>
+        <div id="imageGrid">
+            <div class="grid-label">Top results — click to select</div>
+            <div class="grid-wrap" id="gridWrap"></div>
+            <div id="confirmBar">
+                <img id="confirmThumb" class="preview-thumb" src="" alt="Selected">
+                <div class="confirm-text">Use this image? It will be loaded into the paste pipeline below.</div>
+                <button id="confirmBtn">Use this image ↓</button>
+            </div>
+            <button id="copyImageBtn">📋 Copy Image to Clipboard</button>
+        </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- MODULE 2: Smart Crop to 1:1 -->
+    <div class="crop-section">
+        <h3>Crop Non-Square Image to 1:1</h3>
+        <p>Upload, drag &amp; drop, or paste (Ctrl+V) any image ≥1000px on its shortest side. Either draw a square crop area, or use "Fit without cropping" to keep the whole image and pad it to a square instead.</p>
+
+        <div class="output-settings">
+            <label for="outputResolution">Output canvas size (px)</label>
+            <div class="output-settings-row">
+                <input type="number" id="outputResolution" value="1000" min="1000" step="50">
+                <span class="output-settings-hint">
+                    Used by "Fit without cropping" below, and as the final size for anything sent to the pipeline.
+                    Minimum 1000px. Larger images are scaled down to fit; smaller ones are kept at full quality
+                    and centered on a white background.
+                </span>
+            </div>
+        </div>
+
+        <div id="cropDropZone" tabindex="0">
+            <strong>Click to upload</strong>, drag &amp; drop, or paste (Ctrl+V) an image here
+            <br><small style="color:#adb5bd; margin-top:6px; display:block;">JPG, PNG, WebP — shortest side must be ≥ 1000 px</small>
+        </div>
+        <input type="file" id="cropFileInput" accept="image/*">
+
+        <div id="cropWorkspace">
+            <div id="cropInfo">Original: <span id="cropOrigDims">—</span> &nbsp;|&nbsp; Selection: <span id="cropSelDims">none</span></div>
+            <div id="cropContainer">
+                <canvas id="cropCanvas"></canvas>
+                <div id="cropSelection">
+                    <div class="crop-handle tl" data-handle="tl"></div>
+                    <div class="crop-handle tr" data-handle="tr"></div>
+                    <div class="crop-handle bl" data-handle="bl"></div>
+                    <div class="crop-handle br" data-handle="br"></div>
+                    <div id="cropSizeLabel">0 × 0</div>
+                </div>
+            </div>
+            <div id="cropControls">
+                <span class="crop-hint">Drag to draw a crop area. Hold <kbd>Shift</kbd> to force square.</span>
+                <button id="cropFitBtn">Fit without cropping →</button>
+                <button id="cropResetBtn">Reset</button>
+                <button id="cropApplyBtn" disabled>Preview Crop →</button>
+            </div>
+            <div id="cropPreviewPanel">
+                <div class="preview-header">⚠ Confirm crop — review before applying</div>
+                <div class="crop-compare">
+                    <div class="crop-compare-item">
+                        <canvas id="cropBeforeThumb"></canvas>
+                        <div class="compare-label">Original (crop highlighted)</div>
+                    </div>
+                    <div class="crop-compare-arrow">→</div>
+                    <div class="crop-compare-item">
+                        <canvas id="cropAfterThumb"></canvas>
+                        <div class="compare-label">Cropped 1:1 result</div>
+                    </div>
+                </div>
+                <div class="crop-confirm-btns">
+                    <button id="cropConfirmYes">✓ Apply &amp; send to pipeline</button>
+                    <button id="cropConfirmNo">✗ Go back &amp; adjust</button>
+                </div>
+            </div>
+            <div id="cropStatus"></div>
+        </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- MODULE 3: Paste Pipeline -->
+    <p>Paste a 1:1 image. The input field text is used as the product SKU to locate and update items on <code>store.local</code> automatically.</p>
+
+    <div class="paste-zone" id="pasteZone">
+        <strong>Click to upload</strong> or drag &amp; drop — or press <strong>Ctrl+V</strong> / <strong>Cmd+V</strong> to paste.
+        <br><br>
+        <small style="color: #666;">Requirements: Exactly 1:1 aspect ratio &amp; minimum 1000×1000 pixels.</small>
+    </div>
+
+    <input type="file" id="myFileInput" accept="image/*" style="display:none">
+    <div id="error-msg"></div>
+
+    <div class="download-controls" id="downloadControls">
+        <div class="input-group">
+            <label for="customFileName">Product SKU Target:</label>
+            <input type="text" id="customFileName" value="CRD-TC5A-2SC1B-B">
+        </div>
+        <div class="btn-group">
+            <a id="downloadLink" class="btn">Download WebP</a>
+            <button id="uploadBtn" class="btn">Upload to store.local</button>
+        </div>
+    </div>
+
+    <div id="statusDisplay"></div>
+
+    <!-- Scripts (order matters: shared → modules) -->
+    <script src="/js/shared.js"></script>
+    <script src="/js/skuFinder.js"></script>
+    <script src="/js/cropModule.js"></script>
+    <script src="/js/pipeline.js"></script>
+</body>
+</html>
