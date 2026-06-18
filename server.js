@@ -10,7 +10,7 @@ const { searchProductImages } = require('./routes/searchImages');
 const { proxyImage }          = require('./routes/proxyImage');
 
 const app    = express();
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Parse JSON bodies (needed for the new search endpoint)
 app.use(express.json());
