@@ -36,9 +36,14 @@ if [ -z "$ATTACHMENT_ID" ] || [ "$ATTACHMENT_ID" -eq 0 ]; then
     exit 1
 fi
 
-# Save the file path metadata and link as featured thumbnail
+# Save the file path metadata
 $MYSQL "INSERT INTO wp_postmeta (post_id, meta_key, meta_value) VALUES ($ATTACHMENT_ID, '_wp_attached_file', '${relativeWpPath}') ON DUPLICATE KEY UPDATE meta_value='${relativeWpPath}';"
-$MYSQL "INSERT INTO wp_postmeta (post_id, meta_key, meta_value) VALUES ($PRODUCT_ID, '_thumbnail_id', '$ATTACHMENT_ID') ON DUPLICATE KEY UPDATE meta_value='$ATTACHMENT_ID';"
+
+# THE FIX: Wipe out any old duplicate zombie thumbnail links for this product first
+$MYSQL "DELETE FROM wp_postmeta WHERE post_id = $PRODUCT_ID AND meta_key = '_thumbnail_id';"
+
+# Now bind the clean, solitary thumbnail image reference safely
+$MYSQL "INSERT INTO wp_postmeta (post_id, meta_key, meta_value) VALUES ($PRODUCT_ID, '_thumbnail_id', '$ATTACHMENT_ID');"
 
 rm -f "$MYCNF"
 echo "SUCCESS:$PRODUCT_ID"
