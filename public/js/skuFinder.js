@@ -34,7 +34,6 @@
         <button class="sku-tab"        data-tab="docs">📄 Docs</button>
     `;
     tabBar.style.cssText = `
-        display: none;
         gap: 0;
         margin-bottom: 12px;
         border-bottom: 2px solid #dee2e6;
