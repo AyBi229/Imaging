@@ -15,17 +15,27 @@ async function checkImageExists(req, res) {
                 "SELECT ID FROM wp_posts WHERE post_name = %s AND post_type = \\"attachment\\" LIMIT 1",
                 "${postSlug}"
             ));
-            echo $id > 0 ? "EXISTS" : "NOT_FOUND";
+            if ($id === 0) { echo "NOT_FOUND"; exit; }
+            $file_path = get_attached_file($id);
+            if (!$file_path || !file_exists($file_path) || filesize($file_path) === 0) {
+                echo "CORRUPT";
+            } else {
+                echo "EXISTS";
+            }
         ' 2>/dev/null`;
 
         conn.exec(cmd, (err, stream) => {
-            if (err) { conn.end(); return res.json({ exists: false }); }
+            if (err) { conn.end(); return res.json({ exists: false, corrupt: false }); }
 
             let out = '';
             stream.on('data', d => { out += d.toString(); });
             stream.on('close', () => {
                 conn.end();
-                res.json({ exists: out.includes('EXISTS') });
+                const trimmed = out.trim();
+                res.json({
+                    exists:  trimmed === 'EXISTS' || trimmed === 'CORRUPT',
+                    corrupt: trimmed === 'CORRUPT',
+                });
             });
         });
     }).connect(SSH_CONFIG);

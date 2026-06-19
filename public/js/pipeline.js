@@ -162,7 +162,7 @@
             });
             const checkData = await checkRes.json();
 
-            if (checkData.exists) {
+            if (checkData.exists && !checkData.corrupt) {
                 const confirmed = confirm(
                     `⚠️ A product image already exists for "${sku}".\n\nDo you want to replace it?`
                 );
@@ -171,6 +171,9 @@
                     statusDisplay.textContent = 'Upload cancelled.';
                     return;
                 }
+            } else if (checkData.corrupt) {
+                statusDisplay.style.color = '#856404';
+                statusDisplay.textContent = `Existing image for "${sku}" is blank or missing — replacing automatically…`;
             }
         } catch (err) {
             statusDisplay.style.color = 'red';
