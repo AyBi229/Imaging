@@ -2,8 +2,10 @@
  * skuFinder.js — Module 1: SKU Image Finder
  *
  * Searches for product images by SKU via /search-product-images,
- * lets the user pick one, then copies it to the clipboard so it can
- * be pasted straight into the paste pipeline.
+ * and product PDFs via /search-product-docs.
+ * Results are shown in two tabs: Images (top 5) and Docs (top 5).
+ * Selecting an image copies it to the clipboard for the paste pipeline.
+ * Selecting a doc opens it in a new tab.
  *
  * Depends on: shared.js (window.pasteActiveZone)
  */
@@ -19,7 +21,109 @@
     const confirmBtn   = document.getElementById('confirmBtn');
     const copyImageBtn = document.getElementById('copyImageBtn');
 
-    let selectedUrl = null;
+    let selectedUrl  = null;
+    let activeTab    = 'images'; // 'images' | 'docs'
+    let cachedImages = [];
+    let cachedDocs   = [];
+
+    /* ── Inject tab bar + doc list container (once) ── */
+    const tabBar = document.createElement('div');
+    tabBar.id        = 'skuTabBar';
+    tabBar.innerHTML = `
+        <button class="sku-tab active" data-tab="images">🖼 Images</button>
+        <button class="sku-tab"        data-tab="docs">📄 Docs</button>
+    `;
+    tabBar.style.cssText = `
+        display: none;
+        gap: 0;
+        margin-bottom: 12px;
+        border-bottom: 2px solid #dee2e6;
+    `;
+    imageGrid.parentNode.insertBefore(tabBar, imageGrid);
+
+    const docList = document.createElement('div');
+    docList.id         = 'skuDocList';
+    docList.style.cssText = 'display:none;';
+    imageGrid.parentNode.insertBefore(docList, imageGrid.nextSibling);
+
+    /* Tab button styles injected once */
+    const style = document.createElement('style');
+    style.textContent = `
+        #skuTabBar {
+            display: none;
+            flex-direction: row;
+        }
+        #skuTabBar.visible {
+            display: flex;
+        }
+        .sku-tab {
+            flex: 1;
+            padding: 8px 16px;
+            border: none;
+            background: transparent;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #6c757d;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: color 0.15s, border-color 0.15s;
+        }
+        .sku-tab:hover {
+            color: #343a40;
+        }
+        .sku-tab.active {
+            color: #0d6efd;
+            border-bottom-color: #0d6efd;
+        }
+
+        /* Doc list */
+        #skuDocList {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        .sku-doc-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            background: #fff;
+            transition: background 0.12s, border-color 0.12s;
+            text-decoration: none;
+            color: inherit;
+        }
+        .sku-doc-item:hover {
+            background: #f0f4ff;
+            border-color: #0d6efd;
+        }
+        .sku-doc-icon {
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+        .sku-doc-name {
+            font-size: 0.85rem;
+            color: #212529;
+            word-break: break-all;
+            flex: 1;
+        }
+        .sku-doc-open {
+            font-size: 0.78rem;
+            color: #0d6efd;
+            white-space: nowrap;
+        }
+        .sku-doc-empty {
+            color: #6c757d;
+            font-size: 0.875rem;
+            padding: 12px 0;
+            text-align: center;
+        }
+    `;
+    document.head.appendChild(style);
 
     /* ── Helpers ── */
     function setStatus(msg, color) {
@@ -27,59 +131,126 @@
         searchStatus.style.color = color || '#6c757d';
     }
 
-    function resetGrid() {
-        gridWrap.innerHTML = '';
+    function resetAll() {
+        gridWrap.innerHTML     = '';
+        docList.innerHTML      = '';
         confirmBar.style.display   = 'none';
         copyImageBtn.style.display = 'none';
         copyImageBtn.classList.remove('copied');
-        selectedUrl = null;
+        selectedUrl  = null;
+        cachedImages = [];
+        cachedDocs   = [];
         imageGrid.style.display = 'none';
+        docList.style.display   = 'none';
+        tabBar.classList.remove('visible');
     }
 
-    /* ── Search ── */
-    async function searchImages(sku) {
-        resetGrid();
-        setStatus('Searching for product images…');
-        searchBtn.disabled = true;
-        try {
-            const res = await fetch('/search-product-images', {
-                method:  'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body:    JSON.stringify({ sku }),
-            });
-            if (!res.ok) throw new Error(`Server error ${res.status}`);
-            const data = await res.json();
-            if (!data.images || data.images.length === 0) {
-                setStatus('No images found for this SKU. Try a different query.', '#dc3545');
-                return;
-            }
-            renderGrid(data.images);
-            setStatus(`Found ${data.images.length} result${data.images.length !== 1 ? 's' : ''} — click one to select.`);
-        } catch (err) {
-            setStatus(`Error: ${err.message}`, '#dc3545');
-        } finally {
-            searchBtn.disabled = false;
+    /* ── Tab switching ── */
+    tabBar.addEventListener('click', e => {
+        const btn = e.target.closest('.sku-tab');
+        if (!btn) return;
+        activeTab = btn.dataset.tab;
+        tabBar.querySelectorAll('.sku-tab').forEach(b => b.classList.toggle('active', b === btn));
+        showActiveTab();
+    });
+
+    function showActiveTab() {
+        if (activeTab === 'images') {
+            imageGrid.style.display = cachedImages.length ? 'block' : 'none';
+            docList.style.display   = 'none';
+            // Re-sync confirm bar visibility
+            confirmBar.style.display = selectedUrl ? 'flex' : 'none';
+        } else {
+            imageGrid.style.display = 'none';
+            docList.style.display   = 'block';
+            confirmBar.style.display = 'none';
+            copyImageBtn.style.display = 'none';
         }
     }
 
-    /* ── Grid rendering ── */
-    function renderGrid(images) {
-        imageGrid.style.display = 'block';
+    /* ── Search — fires both endpoints in parallel ── */
+    async function searchAll(sku) {
+        resetAll();
+        setStatus('Searching…');
+        searchBtn.disabled = true;
+
+        const [imagesResult, docsResult] = await Promise.allSettled([
+            fetchImages(sku),
+            fetchDocs(sku),
+        ]);
+
+        searchBtn.disabled = false;
+
+        cachedImages = imagesResult.status === 'fulfilled' ? imagesResult.value : [];
+        cachedDocs   = docsResult.status   === 'fulfilled' ? docsResult.value   : [];
+
+        const hasImages = cachedImages.length > 0;
+        const hasDocs   = cachedDocs.length   > 0;
+
+        if (!hasImages && !hasDocs) {
+            setStatus('No images or documents found for this SKU.', '#dc3545');
+            return;
+        }
+
+        tabBar.classList.add('visible');
+
+        if (hasImages) renderImageGrid(cachedImages);
+        if (hasDocs)   renderDocList(cachedDocs);
+
+        // Default to the tab that has results; prefer images
+        activeTab = hasImages ? 'images' : 'docs';
+        tabBar.querySelectorAll('.sku-tab').forEach(b =>
+            b.classList.toggle('active', b.dataset.tab === activeTab)
+        );
+        showActiveTab();
+
+        const imgLabel = hasImages ? `${cachedImages.length} image${cachedImages.length !== 1 ? 's' : ''}` : 'no images';
+        const docLabel = hasDocs   ? `${cachedDocs.length} doc${cachedDocs.length !== 1 ? 's' : ''}`       : 'no docs';
+        setStatus(`Found ${imgLabel} and ${docLabel} — click a tab to browse.`);
+    }
+
+    async function fetchImages(sku) {
+        const res = await fetch('/search-product-images', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ sku }),
+        });
+        if (!res.ok) throw new Error(`Images: server error ${res.status}`);
+        const data = await res.json();
+        return (data.images || []).slice(0, 5);
+    }
+
+    async function fetchDocs(sku) {
+        const res = await fetch('/search-product-docs', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ sku }),
+        });
+        if (!res.ok) throw new Error(`Docs: server error ${res.status}`);
+        const data = await res.json();
+        // Expects data.docs: [{ name, url }] or data.docs: [string url, …]
+        return (data.docs || []).slice(0, 5);
+    }
+
+    /* ── Image grid ── */
+    function renderImageGrid(images) {
         gridWrap.innerHTML = '';
-        images.slice(0, 5).forEach((imgUrl, i) => {
+        images.forEach((imgUrl, i) => {
             const thumb = document.createElement('div');
             thumb.className = 'grid-thumb';
             thumb.title = `Image ${i + 1}`;
 
-            const check    = document.createElement('span');
-            check.className = 'check';
+            const check = document.createElement('span');
+            check.className   = 'check';
             check.textContent = '✓';
 
             const img  = document.createElement('img');
             img.alt     = `Result ${i + 1}`;
             img.loading = 'lazy';
             img.src     = `/proxy-image?url=${encodeURIComponent(imgUrl)}`;
-            img.onerror = () => { img.src = `https://placehold.co/200x200/dee2e6/868e96?text=${i + 1}`; };
+            img.onerror = () => {
+                img.src = `https://placehold.co/200x200/dee2e6/868e96?text=${i + 1}`;
+            };
 
             thumb.appendChild(img);
             thumb.appendChild(check);
@@ -97,6 +268,48 @@
         confirmBar.style.display   = 'flex';
         copyImageBtn.style.display = 'none';
         copyImageBtn.classList.remove('copied');
+    }
+
+    /* ── Doc list ── */
+    function renderDocList(docs) {
+        docList.innerHTML = '';
+
+        if (!docs.length) {
+            const empty = document.createElement('p');
+            empty.className   = 'sku-doc-empty';
+            empty.textContent = 'No documents found for this SKU.';
+            docList.appendChild(empty);
+            return;
+        }
+
+        docs.forEach((doc, i) => {
+            // Support both { name, url } objects and bare URL strings
+            const url  = typeof doc === 'string' ? doc : doc.url;
+            const name = typeof doc === 'string'
+                ? decodeURIComponent(url.split('/').pop() || `Document ${i + 1}`)
+                : (doc.name || decodeURIComponent(url.split('/').pop() || `Document ${i + 1}`));
+
+            const isPdf = /\.pdf$/i.test(url) || /pdf/i.test(name);
+            const icon  = isPdf ? '📄' : '📎';
+
+            const item = document.createElement('a');
+            item.className = 'sku-doc-item';
+            item.href      = url;
+            item.target    = '_blank';
+            item.rel       = 'noopener noreferrer';
+            item.innerHTML = `
+                <span class="sku-doc-icon">${icon}</span>
+                <span class="sku-doc-name">${escapeHtml(name)}</span>
+                <span class="sku-doc-open">Open ↗</span>
+            `;
+            docList.appendChild(item);
+        });
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+        }[c]));
     }
 
     /* ── Confirm: fetch the full image blob ── */
@@ -167,7 +380,7 @@
     searchBtn.addEventListener('click', () => {
         const sku = skuInput.value.trim();
         if (!sku) { setStatus('Enter a SKU first.', '#dc3545'); return; }
-        searchImages(sku);
+        searchAll(sku);
     });
     skuInput.addEventListener('keydown', e => { if (e.key === 'Enter') searchBtn.click(); });
 })();

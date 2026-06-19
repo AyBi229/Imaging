@@ -7,8 +7,9 @@ const multer  = require('multer');
 const path    = require('path');
 
 const { uploadToWp }          = require('./routes/upload');
-const { searchProductImages } = require('./routes/searchImages');
 const { proxyImage }          = require('./routes/proxyImage');
+const { searchProductImages } = require('./routes/searchImages');
+const { searchProductDocs }   = require('./routes/searchDocs');   // add this line
 
 const app    = express();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -31,6 +32,8 @@ app.post('/search-product-images', searchProductImages);
 app.get('/proxy-image', proxyImage);
 
 app.post('/check-image-exists', checkImageExists);
+
+app.post('/search-product-docs', searchProductDocs);   // add this line
 
 
 // app.listen removed for Render
