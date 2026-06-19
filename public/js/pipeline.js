@@ -73,11 +73,7 @@
             const width  = img.naturalWidth;
             const height = img.naturalHeight;
 
-            if (width !== height) {
-                errorMsg.textContent = `Rejected: Image must be a perfect 1:1 square. Detected: ${width}×${height}`;
-                URL.revokeObjectURL(img.src);
-                return;
-            }
+            
             if (width < 1000) {
                 errorMsg.textContent = `Rejected: Resolution must be at least 1000×1000. Detected: ${width}×${height}`;
                 URL.revokeObjectURL(img.src);
@@ -93,19 +89,18 @@
         canvas.width = res; canvas.height = res;
         const ctx    = canvas.getContext('2d');
 
-        /* White base — visible as padding when source is smaller than res. */
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, res, res);
 
-        const srcSize = img.naturalWidth; // already validated square
+        const iw = img.naturalWidth;
+        const ih = img.naturalHeight;
+        const scale  = Math.min(res / iw, res / ih);
+        const drawW  = Math.round(iw * scale);
+        const drawH  = Math.round(ih * scale);
+        const offX   = Math.round((res - drawW) / 2);
+        const offY   = Math.round((res - drawH) / 2);
 
-        if (srcSize >= res) {
-            ctx.drawImage(img, 0, 0, res, res);
-        } else {
-            /* Keep native resolution, center on white background. */
-            const offset = Math.round((res - srcSize) / 2);
-            ctx.drawImage(img, offset, offset, srcSize, srcSize);
-        }
+        ctx.drawImage(img, 0, 0, iw, ih, offX, offY, drawW, drawH);
 
         canvas.toBlob(blob => {
             if (!blob) return;
