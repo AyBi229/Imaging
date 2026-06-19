@@ -30,7 +30,8 @@ async function uploadToWp(req, res) {
         const conn = new Client();
 
         conn.on('ready', () => {
-            const sqlCmd = buildSqlCmd(sku, postSlug, blobUrl);
+            const fileName = file.originalname;
+            const sqlCmd = buildSqlCmd(sku, postSlug, fileName);
 
             conn.exec(sqlCmd, (execErr, stream) => {
                 if (execErr) return handleError(res, conn, execErr);
