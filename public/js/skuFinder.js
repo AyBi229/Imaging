@@ -291,18 +291,51 @@
             const isPdf = /\.pdf$/i.test(url) || /pdf/i.test(name);
             const icon  = isPdf ? '📄' : '📎';
 
-            const item = document.createElement('a');
+            const item = document.createElement('div');
             item.className = 'sku-doc-item';
-            item.href      = url;
-            item.target    = '_blank';
-            item.rel       = 'noopener noreferrer';
             item.innerHTML = `
                 <span class="sku-doc-icon">${icon}</span>
                 <span class="sku-doc-name">${escapeHtml(name)}</span>
-                <span class="sku-doc-open">Open ↗</span>
+                <a class="sku-doc-open" href="${url}" target="_blank" rel="noopener noreferrer">Open ↗</a>
+                <button type="button" class="sku-doc-upload">Upload to Store</button>
             `;
+
+            const uploadBtn = item.querySelector('.sku-doc-upload');
+            uploadBtn.addEventListener('click', () => uploadDocToStore(url, name, uploadBtn));
+
             docList.appendChild(item);
         });
+    }
+
+    async function uploadDocToStore(url, name, btn) {
+        const sku = skuInput.value.trim();
+        if (!sku) {
+            setStatus('Enter a SKU before uploading a document.', '#dc3545');
+            return;
+        }
+
+        btn.disabled    = true;
+        btn.textContent = 'Uploading…';
+
+        try {
+            const res = await fetch('/upload-doc-to-store', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sku, url, name }),
+            });
+            const data = await res.json();
+
+            if (!data.success) {
+                throw new Error(data.error || 'Upload failed.');
+            }
+
+            btn.textContent = '✅ Uploaded';
+            setStatus(data.message || `Linked document to SKU ${sku}.`, '#28a745');
+        } catch (err) {
+            btn.textContent = '⚠️ Failed — retry';
+            btn.disabled     = false;
+            setStatus(`Document upload failed: ${err.message}`, '#dc3545');
+        }
     }
 
     function escapeHtml(str) {
