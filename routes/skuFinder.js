@@ -1,67 +1,3 @@
-#!/usr/bin/env zsh
-# =============================================================================
-# apply_sku_tabs.sh
-#
-# Patches skuFinder.js to add Images / Docs tabs to the search results.
-#
-# Usage:
-#   bash apply_sku_tabs.sh                      # looks for skuFinder.js in ./
-#   bash apply_sku_tabs.sh /path/to/skuFinder.js
-#
-# What it does:
-#   1. Locates skuFinder.js (argument or auto-detect).
-#   2. Creates a timestamped backup (.bak).
-#   3. Writes the patched file in place.
-#   4. Prints a diff summary so you can review what changed.
-# =============================================================================
-
-set -euo pipefail
-
-# ── Resolve target file ───────────────────────────────────────────────────────
-if [[ $# -ge 1 ]]; then
-    TARGET="$1"
-else
-    # Try to find it relative to the script's own directory first, then cwd
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
-    if [[ -f "$SCRIPT_DIR/skuFinder.js" ]]; then
-        TARGET="$SCRIPT_DIR/skuFinder.js"
-    elif [[ -f "skuFinder.js" ]]; then
-        TARGET="skuFinder.js"
-    else
-        echo "❌  Cannot find skuFinder.js. Pass the path as an argument:"
-        echo "    bash apply_sku_tabs.sh /path/to/skuFinder.js"
-        exit 1
-    fi
-fi
-
-TARGET="$(realpath "$TARGET")"
-
-if [[ ! -f "$TARGET" ]]; then
-    echo "❌  File not found: $TARGET"
-    exit 1
-fi
-
-echo "📄  Target : $TARGET"
-
-# ── Sanity-check: make sure this looks like the right file ───────────────────
-if ! grep -q "skuFinder\|skuSearchInput\|search-product-images" "$TARGET"; then
-    echo "❌  $TARGET doesn't look like skuFinder.js — aborting."
-    exit 1
-fi
-
-# Already patched?
-if grep -q "skuTabBar\|search-product-docs\|activeTab" "$TARGET"; then
-    echo "⚠️   Patch already applied (tab markers found). Nothing to do."
-    exit 0
-fi
-
-# ── Backup ────────────────────────────────────────────────────────────────────
-BACKUP="${TARGET}.$(date +%Y%m%d_%H%M%S).bak"
-cp "$TARGET" "$BACKUP"
-echo "💾  Backup  : $BACKUP"
-
-# ── Write patched file ────────────────────────────────────────────────────────
-cat > "$TARGET" << 'PATCHED_EOF'
 /**
  * skuFinder.js — Module 1: SKU Image Finder
  *
@@ -222,6 +158,7 @@ cat > "$TARGET" << 'PATCHED_EOF'
         if (activeTab === 'images') {
             imageGrid.style.display = cachedImages.length ? 'block' : 'none';
             docList.style.display   = 'none';
+            // Re-sync confirm bar visibility
             confirmBar.style.display = selectedUrl ? 'flex' : 'none';
         } else {
             imageGrid.style.display = 'none';
@@ -291,7 +228,7 @@ cat > "$TARGET" << 'PATCHED_EOF'
         });
         if (!res.ok) throw new Error(`Docs: server error ${res.status}`);
         const data = await res.json();
-        // Accepts { docs: [{ name, url }] } or { docs: ["https://…", …] }
+        // Expects data.docs: [{ name, url }] or data.docs: [string url, …]
         return (data.docs || []).slice(0, 5);
     }
 
@@ -447,18 +384,3 @@ cat > "$TARGET" << 'PATCHED_EOF'
     });
     skuInput.addEventListener('keydown', e => { if (e.key === 'Enter') searchBtn.click(); });
 })();
-PATCHED_EOF
-
-echo "✅  Patch applied."
-
-# ── Diff summary ──────────────────────────────────────────────────────────────
-echo ""
-echo "── Diff (original vs patched) ──────────────────────────────────────────"
-diff --unified=2 "$BACKUP" "$TARGET" || true   # diff exits non-zero when files differ; that's expected
-echo "────────────────────────────────────────────────────────────────────────"
-echo ""
-echo "Done. Original saved to: $BACKUP"
-echo ""
-echo "⚠️  Reminder: add a /search-product-docs endpoint to your server that"
-echo "   returns { docs: [{ name, url }, …] } (or bare URL strings) for the"
-echo "   Docs tab to populate."
