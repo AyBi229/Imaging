@@ -73,6 +73,15 @@
             const width  = img.naturalWidth;
             const height = img.naturalHeight;
 
+            // NEW: If it's already a perfect 1000x1000 WebP from our crop module, accept it immediately
+            if (width === 1000 && height === 1000 && file.type === 'image/webp') {
+                activeBlob = file;
+                updateDownloadAttributes();
+                downloadControls.style.display = 'block';
+                URL.revokeObjectURL(img.src);
+                return;
+            }
+
             if (width < 1000 || height < 1000) {
                 errorMsg.textContent = `Rejected: Image must be at least 1000×1000px. Detected: ${width}×${height}`;
                 URL.revokeObjectURL(img.src);
@@ -84,7 +93,7 @@
     }
 
     function convertToWebP(img) {
-        const res    = window.getOutputResolution(); // always 1000
+        const res    = window.getOutputResolution(); 
         const canvas = document.createElement('canvas');
         canvas.width = res; canvas.height = res;
         const ctx    = canvas.getContext('2d');
@@ -94,13 +103,18 @@
 
         const iw    = img.naturalWidth;
         const ih    = img.naturalHeight;
-        const scale = Math.min(res / iw, res / ih);
-        const drawW = Math.round(iw * scale);
-        const drawH = Math.round(ih * scale);
-        const offX  = Math.round((res - drawW) / 2);
-        const offY  = Math.round((res - drawH) / 2);
 
-        ctx.drawImage(img, 0, 0, iw, ih, offX, offY, drawW, drawH);
+        if (iw === ih) {
+            // Safe layout path for perfect squares: no scaling or clipping math required
+            ctx.drawImage(img, 0, 0, res, res);
+        } else {
+            const scale = Math.min(res / iw, res / ih);
+            const drawW = Math.min(res, Math.round(iw * scale));
+            const drawH = Math.min(res, Math.round(ih * scale));
+            const offX  = Math.max(0, Math.round((res - drawW) / 2));
+            const offY  = Math.max(0, Math.round((res - drawH) / 2));
+            ctx.drawImage(img, offX, offY, drawW, drawH);
+        }
 
         canvas.toBlob(blob => {
             if (!blob) return;

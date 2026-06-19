@@ -317,14 +317,19 @@
         const res         = window.getOutputResolution();
         const finalCanvas = document.createElement('canvas');
         finalCanvas.width = res; finalCanvas.height = res;
-        finalCanvas.getContext('2d').drawImage(sourceImg, c.x, c.y, c.size, c.size, 0, 0, res, res);
+        
+        const ctx = finalCanvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, res, res);
+        ctx.drawImage(sourceImg, c.x, c.y, c.size, c.size, 0, 0, res, res);
 
         finalCanvas.toBlob(blob => {
             if (!blob) { setStatus('Crop failed — please try again.', '#dc3545'); return; }
-            sendToPipeline(blob, 'cropped.png');
+            // Directly feed a WebP blob to the pipeline
+            sendToPipeline(blob, 'cropped.webp');
             setStatus('✓ Cropped image sent to the pipeline below.', '#28a745');
             previewPanel.style.display = 'none';
-        }, 'image/png');
+        }, 'image/webp', 0.92); // Keep quality consistent
     });
 
     confirmNo.addEventListener('click', () => { previewPanel.style.display = 'none'; });
@@ -338,24 +343,28 @@
         const ih       = sourceImg.naturalHeight;
         const longSide = Math.max(iw, ih);
         const scale    = longSide > res ? res / longSide : 1;
-        const drawW    = Math.round(iw * scale);
-        const drawH    = Math.round(ih * scale);
-        const offX     = Math.round((res - drawW) / 2);
-        const offY     = Math.round((res - drawH) / 2);
+        
+        // Explicitly round calculations to whole even integers
+        const drawW    = Math.min(res, Math.round(iw * scale));
+        const drawH    = Math.min(res, Math.round(ih * scale));
+        const offX     = Math.max(0, Math.round((res - drawW) / 2));
+        const offY     = Math.max(0, Math.round((res - drawH) / 2));
 
         const finalCanvas = document.createElement('canvas');
         finalCanvas.width = res; finalCanvas.height = res;
         const ctx = finalCanvas.getContext('2d');
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, res, res);
-        ctx.drawImage(sourceImg, 0, 0, iw, ih, offX, offY, drawW, drawH);
+        
+        // Use the safe 6-argument drawImage to prevent sub-pixel canvas clipping bugs
+        ctx.drawImage(sourceImg, offX, offY, drawW, drawH);
 
         finalCanvas.toBlob(blob => {
             if (!blob) { setStatus('Fit failed — please try again.', '#dc3545'); return; }
-            sendToPipeline(blob, 'fitted.png');
-            setStatus(`✓ Whole image fitted to ${res}×${res} — nothing cropped — and sent to the pipeline below.`, '#28a745');
+            sendToPipeline(blob, 'fitted.webp');
+            setStatus(`✓ Whole image fitted to ${res}×${res} — sent to the pipeline.`, '#28a745');
             previewPanel.style.display = 'none';
-        }, 'image/png');
+        }, 'image/webp', 0.92);
     });
 
     function sendToPipeline(blob, filename) {
