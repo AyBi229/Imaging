@@ -68,25 +68,40 @@
         window.pasteActiveZone = 'crop';
     });
 
+    function dataURLtoBlob(dataURL) {
+        const [header, data] = dataURL.split(',');
+        const mime = header.match(/:(.*?);/)[1];
+        const binary = atob(data);
+        const arr = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
+        return new Blob([arr], { type: mime });
+    }
+
     function loadFile(file) {
         cropStatus.textContent = '';
         const reader = new FileReader();
         reader.onload = ev => {
             const img = new Image();
             img.onload = () => {
-                const shortSide = Math.min(img.naturalWidth, img.naturalHeight);
+                const iw = img.naturalWidth;
+                const ih = img.naturalHeight;
+                const shortSide = Math.min(iw, ih);
+                const isSquare = iw === ih;
+
+                if (isSquare && iw >= MIN_PX) {
+                    setStatus(`This image is already 1:1 (${iw}×${ih}) and ready to use — sending it directly to the pipeline.`, '#28a745');
+                    sendToPipeline(file instanceof Blob ? file : dataURLtoBlob(ev.target.result), file.name || 'image.png');
+                    return;
+                }
+                if (isSquare && iw < MIN_PX) {
+                    setStatus(`Already 1:1 but too small (${iw}×${ih}) — must be ≥ ${MIN_PX}px.`, '#dc3545');
+                    return;
+                }
                 if (shortSide < MIN_PX) {
                     setStatus(`Rejected: shortest side is ${shortSide}px — must be ≥ ${MIN_PX}px.`, '#dc3545');
                     return;
                 }
-                if (img.naturalWidth === img.naturalHeight) {
-                    setStatus(
-                        `This image is already 1:1 (${img.naturalWidth}×${img.naturalHeight}). ` +
-                        `Use it directly in the paste pipeline below.`,
-                        '#856404'
-                    );
-                    return;
-                }
+
                 sourceImg = img;
                 initCropUI();
             };
