@@ -1,3 +1,4 @@
+const { checkImageExists } = require('./routes/checkImageExists');
 require('dotenv').config();
 const { put } = require('@vercel/blob');
 
