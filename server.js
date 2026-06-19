@@ -29,6 +29,9 @@ app.post('/search-product-images', searchProductImages);
 // ── New: Image proxy (avoids CORS when loading third-party images) ──
 app.get('/proxy-image', proxyImage);
 
+app.post('/check-image-exists', checkImageExists);
+
+
 // app.listen removed for Render
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

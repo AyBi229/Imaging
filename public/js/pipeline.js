@@ -143,11 +143,38 @@
 
         const sku = updateDownloadAttributes();
 
-        /* Final size verification before upload */
+        /* Strict 1000×1000 guard */
         const bitmap = await createImageBitmap(activeBlob);
         if (bitmap.width !== 1000 || bitmap.height !== 1000) {
             statusDisplay.style.color = 'red';
             statusDisplay.textContent = `Blocked: image must be exactly 1000×1000. Detected: ${bitmap.width}×${bitmap.height}`;
+            return;
+        }
+
+        /* Check if image already exists for this SKU */
+        statusDisplay.style.color = '#17a2b8';
+        statusDisplay.textContent = 'Checking for existing image…';
+        try {
+            const checkRes  = await fetch('/check-image-exists', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({ sku }),
+            });
+            const checkData = await checkRes.json();
+
+            if (checkData.exists) {
+                const confirmed = confirm(
+                    `⚠️ A product image already exists for "${sku}".\n\nDo you want to replace it?`
+                );
+                if (!confirmed) {
+                    statusDisplay.style.color = '#6c757d';
+                    statusDisplay.textContent = 'Upload cancelled.';
+                    return;
+                }
+            }
+        } catch (err) {
+            statusDisplay.style.color = 'red';
+            statusDisplay.textContent = `Could not check existing image: ${err.message}`;
             return;
         }
 
