@@ -3,6 +3,7 @@ set -euo pipefail
 
 # ── Create new directories ────────────────────────────────────────────────────
 mkdir -p public/js
+mkdir -p public/css
 
 # ── public/index.html ────────────────────────────────────────────────────────
 cat > public/index.html << 'HTMLEOF'
@@ -45,18 +46,6 @@ cat > public/index.html << 'HTMLEOF'
     <div class="crop-section">
         <h3>Crop Non-Square Image to 1:1</h3>
         <p>Upload, drag &amp; drop, or paste (Ctrl+V) any image ≥1000px on its shortest side. Either draw a square crop area, or use "Fit without cropping" to keep the whole image and pad it to a square instead.</p>
-
-        <div class="output-settings">
-            <label for="outputResolution">Output canvas size (px)</label>
-            <div class="output-settings-row">
-                <input type="number" id="outputResolution" value="1000" min="1000" step="50">
-                <span class="output-settings-hint">
-                    Used by "Fit without cropping" below, and as the final size for anything sent to the pipeline.
-                    Minimum 1000px. Larger images are scaled down to fit; smaller ones are kept at full quality
-                    and centered on a white background.
-                </span>
-            </div>
-        </div>
 
         <div id="cropDropZone" tabindex="0">
             <strong>Click to upload</strong>, drag &amp; drop, or paste (Ctrl+V) an image here
@@ -141,7 +130,6 @@ cat > public/index.html << 'HTMLEOF'
 HTMLEOF
 
 # ── public/css/styles.css ────────────────────────────────────────────────────
-mkdir -p public/css
 cat > public/css/styles.css << 'CSSEOF'
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -523,72 +511,21 @@ body {
 }
 
 hr.divider { border: none; border-top: 1px solid #dee2e6; margin: 28px 0 24px; }
-
-/* ── Output resolution control ─────────────────────── */
-.output-settings {
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 16px 20px;
-    margin: 0 0 16px 0;
-}
-.output-settings label {
-    display: block;
-    font-size: 0.85em;
-    font-weight: 700;
-    color: #495057;
-    margin-bottom: 8px;
-}
-.output-settings-row { display: flex; align-items: flex-start; gap: 14px; flex-wrap: wrap; }
-#outputResolution {
-    width: 110px;
-    padding: 8px 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 1em;
-    flex-shrink: 0;
-}
-#outputResolution:focus {
-    outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0,123,255,0.15);
-}
-#outputResolution.clamped { border-color: #dc3545; }
-.output-settings-hint { font-size: 0.8em; color: #868e96; flex: 1; min-width: 200px; }
 CSSEOF
 
 # ── public/js/shared.js ───────────────────────────────────────────────────────
 cat > public/js/shared.js << 'JSEOF'
 /**
- * shared.js — globals shared across all three pipeline modules.
+ * shared.js — globals shared across all pipeline modules.
  *
  * Exposes:
- *   window.pasteActiveZone   — 'pipeline' | 'crop'
- *   window.getOutputResolution()
+ *   window.pasteActiveZone     — 'pipeline' | 'crop'
+ *   window.getOutputResolution() — always returns 1000
  */
 
 window.pasteActiveZone = 'pipeline';
 
-(function () {
-    const input       = document.getElementById('outputResolution');
-    const MIN_RES     = 1000;
-
-    function getOutputResolution() {
-        let val = parseInt(input.value, 10);
-        if (isNaN(val) || val < MIN_RES) {
-            val = MIN_RES;
-            input.value = MIN_RES;
-            input.classList.add('clamped');
-            setTimeout(() => input.classList.remove('clamped'), 800);
-        }
-        return val;
-    }
-
-    input.addEventListener('change', getOutputResolution);
-    input.addEventListener('blur',   getOutputResolution);
-
-    window.getOutputResolution = getOutputResolution;
-})();
+window.getOutputResolution = function () { return 1000; };
 JSEOF
 
 # ── public/js/skuFinder.js ────────────────────────────────────────────────────
@@ -806,7 +743,7 @@ cat > public/js/cropModule.js << 'JSEOF'
     const MIN_PX = 1000;
 
     let sourceImg    = null;
-    let displayScale = 1; // source pixels per CSS pixel
+    let displayScale = 1;
 
     let sel  = { x: 0, y: 0, w: 0, h: 0, active: false };
     let drag = { active: false, mode: null, startX: 0, startY: 0, origSel: null };
@@ -835,10 +772,19 @@ cat > public/js/cropModule.js << 'JSEOF'
         if (f && f.type.startsWith('image/')) loadFile(f);
     });
 
-    /* Clicking anywhere in the crop section routes paste here. */
     document.querySelector('.crop-section').addEventListener('click', () => {
         window.pasteActiveZone = 'crop';
     });
+
+    /* ── dataURL → Blob helper ── */
+    function dataURLtoBlob(dataURL) {
+        const [header, data] = dataURL.split(',');
+        const mime = header.match(/:(.*?);/)[1];
+        const binary = atob(data);
+        const arr = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
+        return new Blob([arr], { type: mime });
+    }
 
     function loadFile(file) {
         cropStatus.textContent = '';
@@ -846,19 +792,25 @@ cat > public/js/cropModule.js << 'JSEOF'
         reader.onload = ev => {
             const img = new Image();
             img.onload = () => {
-                const shortSide = Math.min(img.naturalWidth, img.naturalHeight);
+                const iw = img.naturalWidth;
+                const ih = img.naturalHeight;
+                const shortSide = Math.min(iw, ih);
+                const isSquare = iw === ih;
+
+                if (isSquare && iw >= MIN_PX) {
+                    setStatus(`This image is already 1:1 (${iw}×${ih}) and ready to use — sending it directly to the pipeline.`, '#28a745');
+                    sendToPipeline(dataURLtoBlob(ev.target.result), file.name || 'image.png');
+                    return;
+                }
+                if (isSquare && iw < MIN_PX) {
+                    setStatus(`Already 1:1 but too small (${iw}×${ih}) — must be ≥ ${MIN_PX}px.`, '#dc3545');
+                    return;
+                }
                 if (shortSide < MIN_PX) {
                     setStatus(`Rejected: shortest side is ${shortSide}px — must be ≥ ${MIN_PX}px.`, '#dc3545');
                     return;
                 }
-                if (img.naturalWidth === img.naturalHeight) {
-                    setStatus(
-                        `This image is already 1:1 (${img.naturalWidth}×${img.naturalHeight}). ` +
-                        `Use it directly in the paste pipeline below.`,
-                        '#856404'
-                    );
-                    return;
-                }
+
                 sourceImg = img;
                 initCropUI();
             };
@@ -887,7 +839,6 @@ cat > public/js/cropModule.js << 'JSEOF'
         cropCanvas.style.height = Math.round(ih / displayScale) + 'px';
         cropCanvas.getContext('2d').drawImage(sourceImg, 0, 0);
 
-        /* Default: centred square using the short side */
         const squareCss = Math.min(iw, ih) / displayScale;
         const offX      = (iw / displayScale - squareCss) / 2;
         const offY      = (ih / displayScale - squareCss) / 2;
@@ -1095,7 +1046,7 @@ cat > public/js/cropModule.js << 'JSEOF'
         const iw       = sourceImg.naturalWidth;
         const ih       = sourceImg.naturalHeight;
         const longSide = Math.max(iw, ih);
-        const scale    = longSide > res ? res / longSide : 1; // shrink-only, never upscale
+        const scale    = longSide > res ? res / longSide : 1;
         const drawW    = Math.round(iw * scale);
         const drawH    = Math.round(ih * scale);
         const offX     = Math.round((res - drawW) / 2);
@@ -1138,7 +1089,7 @@ cat > public/js/cropModule.js << 'JSEOF'
         cropStatus.textContent     = '';
     });
 
-    /* ── Paste routing: only handle when this module is active ── */
+    /* ── Paste routing ── */
     window.addEventListener('paste', e => {
         if (window.pasteActiveZone !== 'crop') return;
         const items = e.clipboardData && e.clipboardData.items;
@@ -1162,9 +1113,10 @@ cat > public/js/pipeline.js << 'JSEOF'
 /**
  * pipeline.js — Module 3: Paste Pipeline
  *
- * Accepts a 1:1 ≥1000px image via clipboard paste (or injected by
- * the crop module), converts it to WebP at the configured output
- * resolution, then offers a download link or a direct WP upload.
+ * Accepts any image via clipboard paste, drag-and-drop, or file picker.
+ * Converts it to exactly 1000×1000 WebP (fitting non-square images with
+ * white padding), then offers a download link or a direct WP upload.
+ * Upload is strictly blocked unless the blob is exactly 1000×1000.
  *
  * Exposes:  window.processAndValidateImage(file)
  * Depends on: shared.js (window.pasteActiveZone, window.getOutputResolution)
@@ -1190,7 +1142,7 @@ cat > public/js/pipeline.js << 'JSEOF'
     });
     fileInput.addEventListener('change', e => {
         if (e.target.files[0]) processAndValidateImage(e.target.files[0]);
-        fileInput.value = ''; // reset so same file can be re-picked
+        fileInput.value = '';
     });
 
     /* ── Drag and drop ── */
@@ -1221,52 +1173,46 @@ cat > public/js/pipeline.js << 'JSEOF'
 
     /* ── Validation → conversion ── */
     function processAndValidateImage(file) {
-        errorMsg.textContent             = '';
-        downloadControls.style.display   = 'none';
-        statusDisplay.textContent        = '';
-        activeBlob                       = null;
+        errorMsg.textContent           = '';
+        downloadControls.style.display = 'none';
+        statusDisplay.textContent      = '';
+        activeBlob                     = null;
 
         const img = new Image();
         img.src = URL.createObjectURL(file);
 
         img.onload = function () {
-            // FIX: use naturalWidth/naturalHeight, not layout width/height
             const width  = img.naturalWidth;
             const height = img.naturalHeight;
 
-            if (width !== height) {
-                errorMsg.textContent = `Rejected: Image must be a perfect 1:1 square. Detected: ${width}×${height}`;
+            if (width < 1000 || height < 1000) {
+                errorMsg.textContent = `Rejected: Image must be at least 1000×1000px. Detected: ${width}×${height}`;
                 URL.revokeObjectURL(img.src);
                 return;
             }
-            if (width < 1000) {
-                errorMsg.textContent = `Rejected: Resolution must be at least 1000×1000. Detected: ${width}×${height}`;
-                URL.revokeObjectURL(img.src);
-                return;
-            }
+
             convertToWebP(img);
         };
     }
 
     function convertToWebP(img) {
-        const res    = window.getOutputResolution();
+        const res    = window.getOutputResolution(); // always 1000
         const canvas = document.createElement('canvas');
         canvas.width = res; canvas.height = res;
         const ctx    = canvas.getContext('2d');
 
-        /* White base — visible as padding when source is smaller than res. */
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, res, res);
 
-        const srcSize = img.naturalWidth; // already validated square
+        const iw    = img.naturalWidth;
+        const ih    = img.naturalHeight;
+        const scale = Math.min(res / iw, res / ih);
+        const drawW = Math.round(iw * scale);
+        const drawH = Math.round(ih * scale);
+        const offX  = Math.round((res - drawW) / 2);
+        const offY  = Math.round((res - drawH) / 2);
 
-        if (srcSize >= res) {
-            ctx.drawImage(img, 0, 0, res, res);
-        } else {
-            /* Keep native resolution, center on white background. */
-            const offset = Math.round((res - srcSize) / 2);
-            ctx.drawImage(img, offset, offset, srcSize, srcSize);
-        }
+        ctx.drawImage(img, 0, 0, iw, ih, offX, offY, drawW, drawH);
 
         canvas.toBlob(blob => {
             if (!blob) return;
@@ -1299,14 +1245,24 @@ cat > public/js/pipeline.js << 'JSEOF'
 
     downloadLink.addEventListener('click', () => {
         const name = updateDownloadAttributes();
-        const res  = window.getOutputResolution();
         statusDisplay.style.color = '#17a2b8';
-        statusDisplay.textContent = `Downloaded File: ${name}.webp (${res}×${res})`;
+        statusDisplay.textContent = `Downloaded File: ${name}.webp (1000×1000)`;
     });
 
-    /* ── WP upload ── */
+    /* ── WP upload — strict 1000×1000 guard ── */
     uploadBtn.addEventListener('click', async () => {
+        if (!activeBlob) return;
+
         const sku = updateDownloadAttributes();
+
+        /* Final size verification before upload */
+        const bitmap = await createImageBitmap(activeBlob);
+        if (bitmap.width !== 1000 || bitmap.height !== 1000) {
+            statusDisplay.style.color = 'red';
+            statusDisplay.textContent = `Blocked: image must be exactly 1000×1000. Detected: ${bitmap.width}×${bitmap.height}`;
+            return;
+        }
+
         statusDisplay.style.color = '#17a2b8';
         statusDisplay.textContent = 'Connecting via SSH and executing WP pipeline…';
 
@@ -1336,19 +1292,20 @@ cat > public/js/pipeline.js << 'JSEOF'
 JSEOF
 
 echo ""
-echo "✅  Done. New structure:"
+echo "✅  Done. Changes applied:"
+echo ""
+echo "  • index.html  — removed output resolution control"
+echo "  • shared.js   — getOutputResolution() hardcoded to 1000"
+echo "  • cropModule.js — smart feedback: already-square images sent directly"
+echo "                    to pipeline; too-small images rejected with reason"
+echo "  • pipeline.js — accepts non-square images (fits to 1000×1000 with"
+echo "                  white padding); upload blocked if not exactly 1000×1000"
 echo ""
 echo "  public/"
 echo "  ├── index.html"
-echo "  ├── css/"
-echo "  │   └── styles.css"
+echo "  ├── css/styles.css"
 echo "  └── js/"
-echo "      ├── shared.js      ← output resolution + pasteActiveZone"
-echo "      ├── skuFinder.js   ← Module 1: SKU image search"
-echo "      ├── cropModule.js  ← Module 2: smart crop / fit"
-echo "      └── pipeline.js    ← Module 3: paste → WebP → upload"
-echo ""
-echo "  Make sure your Express server serves static files from ./public, e.g.:"
-echo "    app.use(express.static('public'));"
-echo ""
-echo "  Also verify server.js serves /css and /js — express.static covers both."
+echo "      ├── shared.js"
+echo "      ├── skuFinder.js"
+echo "      ├── cropModule.js"
+echo "      └── pipeline.js"

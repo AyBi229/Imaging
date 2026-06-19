@@ -38,18 +38,6 @@
         <h3>Crop Non-Square Image to 1:1</h3>
         <p>Upload, drag &amp; drop, or paste (Ctrl+V) any image ≥1000px on its shortest side. Either draw a square crop area, or use "Fit without cropping" to keep the whole image and pad it to a square instead.</p>
 
-        <div class="output-settings">
-            <label for="outputResolution">Output canvas size (px)</label>
-            <div class="output-settings-row">
-                <input type="number" id="outputResolution" value="1000" min="1000" step="50">
-                <span class="output-settings-hint">
-                    Used by "Fit without cropping" below, and as the final size for anything sent to the pipeline.
-                    Minimum 1000px. Larger images are scaled down to fit; smaller ones are kept at full quality
-                    and centered on a white background.
-                </span>
-            </div>
-        </div>
-
         <div id="cropDropZone" tabindex="0">
             <strong>Click to upload</strong>, drag &amp; drop, or paste (Ctrl+V) an image here
             <br><small style="color:#adb5bd; margin-top:6px; display:block;">JPG, PNG, WebP — shortest side must be ≥ 1000 px</small>

@@ -1,9 +1,10 @@
 /**
  * pipeline.js — Module 3: Paste Pipeline
  *
- * Accepts a 1:1 ≥1000px image via clipboard paste (or injected by
- * the crop module), converts it to WebP at the configured output
- * resolution, then offers a download link or a direct WP upload.
+ * Accepts any image via clipboard paste, drag-and-drop, or file picker.
+ * Converts it to exactly 1000×1000 WebP (fitting non-square images with
+ * white padding), then offers a download link or a direct WP upload.
+ * Upload is strictly blocked unless the blob is exactly 1000×1000.
  *
  * Exposes:  window.processAndValidateImage(file)
  * Depends on: shared.js (window.pasteActiveZone, window.getOutputResolution)
@@ -29,7 +30,7 @@
     });
     fileInput.addEventListener('change', e => {
         if (e.target.files[0]) processAndValidateImage(e.target.files[0]);
-        fileInput.value = ''; // reset so same file can be re-picked
+        fileInput.value = '';
     });
 
     /* ── Drag and drop ── */
@@ -60,31 +61,30 @@
 
     /* ── Validation → conversion ── */
     function processAndValidateImage(file) {
-        errorMsg.textContent             = '';
-        downloadControls.style.display   = 'none';
-        statusDisplay.textContent        = '';
-        activeBlob                       = null;
+        errorMsg.textContent           = '';
+        downloadControls.style.display = 'none';
+        statusDisplay.textContent      = '';
+        activeBlob                     = null;
 
         const img = new Image();
         img.src = URL.createObjectURL(file);
 
         img.onload = function () {
-            // FIX: use naturalWidth/naturalHeight, not layout width/height
             const width  = img.naturalWidth;
             const height = img.naturalHeight;
 
-            
-            if (width < 1000) {
-                errorMsg.textContent = `Rejected: Resolution must be at least 1000×1000. Detected: ${width}×${height}`;
+            if (width < 1000 || height < 1000) {
+                errorMsg.textContent = `Rejected: Image must be at least 1000×1000px. Detected: ${width}×${height}`;
                 URL.revokeObjectURL(img.src);
                 return;
             }
+
             convertToWebP(img);
         };
     }
 
     function convertToWebP(img) {
-        const res    = window.getOutputResolution();
+        const res    = window.getOutputResolution(); // always 1000
         const canvas = document.createElement('canvas');
         canvas.width = res; canvas.height = res;
         const ctx    = canvas.getContext('2d');
@@ -92,13 +92,13 @@
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, res, res);
 
-        const iw = img.naturalWidth;
-        const ih = img.naturalHeight;
-        const scale  = Math.min(res / iw, res / ih);
-        const drawW  = Math.round(iw * scale);
-        const drawH  = Math.round(ih * scale);
-        const offX   = Math.round((res - drawW) / 2);
-        const offY   = Math.round((res - drawH) / 2);
+        const iw    = img.naturalWidth;
+        const ih    = img.naturalHeight;
+        const scale = Math.min(res / iw, res / ih);
+        const drawW = Math.round(iw * scale);
+        const drawH = Math.round(ih * scale);
+        const offX  = Math.round((res - drawW) / 2);
+        const offY  = Math.round((res - drawH) / 2);
 
         ctx.drawImage(img, 0, 0, iw, ih, offX, offY, drawW, drawH);
 
@@ -133,14 +133,24 @@
 
     downloadLink.addEventListener('click', () => {
         const name = updateDownloadAttributes();
-        const res  = window.getOutputResolution();
         statusDisplay.style.color = '#17a2b8';
-        statusDisplay.textContent = `Downloaded File: ${name}.webp (${res}×${res})`;
+        statusDisplay.textContent = `Downloaded File: ${name}.webp (1000×1000)`;
     });
 
-    /* ── WP upload ── */
+    /* ── WP upload — strict 1000×1000 guard ── */
     uploadBtn.addEventListener('click', async () => {
+        if (!activeBlob) return;
+
         const sku = updateDownloadAttributes();
+
+        /* Final size verification before upload */
+        const bitmap = await createImageBitmap(activeBlob);
+        if (bitmap.width !== 1000 || bitmap.height !== 1000) {
+            statusDisplay.style.color = 'red';
+            statusDisplay.textContent = `Blocked: image must be exactly 1000×1000. Detected: ${bitmap.width}×${bitmap.height}`;
+            return;
+        }
+
         statusDisplay.style.color = '#17a2b8';
         statusDisplay.textContent = 'Connecting via SSH and executing WP pipeline…';
 

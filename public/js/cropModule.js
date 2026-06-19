@@ -34,7 +34,7 @@
     const MIN_PX = 1000;
 
     let sourceImg    = null;
-    let displayScale = 1; // source pixels per CSS pixel
+    let displayScale = 1;
 
     let sel  = { x: 0, y: 0, w: 0, h: 0, active: false };
     let drag = { active: false, mode: null, startX: 0, startY: 0, origSel: null };
@@ -63,11 +63,11 @@
         if (f && f.type.startsWith('image/')) loadFile(f);
     });
 
-    /* Clicking anywhere in the crop section routes paste here. */
     document.querySelector('.crop-section').addEventListener('click', () => {
         window.pasteActiveZone = 'crop';
     });
 
+    /* ── dataURL → Blob helper ── */
     function dataURLtoBlob(dataURL) {
         const [header, data] = dataURL.split(',');
         const mime = header.match(/:(.*?);/)[1];
@@ -90,7 +90,7 @@
 
                 if (isSquare && iw >= MIN_PX) {
                     setStatus(`This image is already 1:1 (${iw}×${ih}) and ready to use — sending it directly to the pipeline.`, '#28a745');
-                    sendToPipeline(file instanceof Blob ? file : dataURLtoBlob(ev.target.result), file.name || 'image.png');
+                    sendToPipeline(dataURLtoBlob(ev.target.result), file.name || 'image.png');
                     return;
                 }
                 if (isSquare && iw < MIN_PX) {
@@ -130,7 +130,6 @@
         cropCanvas.style.height = Math.round(ih / displayScale) + 'px';
         cropCanvas.getContext('2d').drawImage(sourceImg, 0, 0);
 
-        /* Default: centred square using the short side */
         const squareCss = Math.min(iw, ih) / displayScale;
         const offX      = (iw / displayScale - squareCss) / 2;
         const offY      = (ih / displayScale - squareCss) / 2;
@@ -338,7 +337,7 @@
         const iw       = sourceImg.naturalWidth;
         const ih       = sourceImg.naturalHeight;
         const longSide = Math.max(iw, ih);
-        const scale    = longSide > res ? res / longSide : 1; // shrink-only, never upscale
+        const scale    = longSide > res ? res / longSide : 1;
         const drawW    = Math.round(iw * scale);
         const drawH    = Math.round(ih * scale);
         const offX     = Math.round((res - drawW) / 2);
@@ -381,7 +380,7 @@
         cropStatus.textContent     = '';
     });
 
-    /* ── Paste routing: only handle when this module is active ── */
+    /* ── Paste routing ── */
     window.addEventListener('paste', e => {
         if (window.pasteActiveZone !== 'crop') return;
         const items = e.clipboardData && e.clipboardData.items;

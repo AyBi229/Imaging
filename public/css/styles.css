@@ -378,35 +378,3 @@ body {
 }
 
 hr.divider { border: none; border-top: 1px solid #dee2e6; margin: 28px 0 24px; }
-
-/* ── Output resolution control ─────────────────────── */
-.output-settings {
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 16px 20px;
-    margin: 0 0 16px 0;
-}
-.output-settings label {
-    display: block;
-    font-size: 0.85em;
-    font-weight: 700;
-    color: #495057;
-    margin-bottom: 8px;
-}
-.output-settings-row { display: flex; align-items: flex-start; gap: 14px; flex-wrap: wrap; }
-#outputResolution {
-    width: 110px;
-    padding: 8px 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 1em;
-    flex-shrink: 0;
-}
-#outputResolution:focus {
-    outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0,123,255,0.15);
-}
-#outputResolution.clamped { border-color: #dc3545; }
-.output-settings-hint { font-size: 0.8em; color: #868e96; flex: 1; min-width: 200px; }
