@@ -48,9 +48,11 @@
         if (f && f.type.startsWith('image/')) processAndValidateImage(f);
     });
 
+    /* ── Paste — only handles when active zone is pipeline ── */
     window.addEventListener('paste', e => {
         if (window.pasteActiveZone === 'crop') return;
-        const items = e.clipboardData.items;
+        const items = e.clipboardData && e.clipboardData.items;
+        if (!items) return;
         for (let i = 0; i < items.length; i++) {
             if (items[i].kind === 'file' && items[i].type.startsWith('image/')) {
                 processAndValidateImage(items[i].getAsFile());
@@ -73,7 +75,7 @@
             const width  = img.naturalWidth;
             const height = img.naturalHeight;
 
-            // NEW: If it's already a perfect 1000x1000 WebP from our crop module, accept it immediately
+            // If it's already a perfect 1000x1000 WebP from our crop module, accept it immediately
             if (width === 1000 && height === 1000 && file.type === 'image/webp') {
                 activeBlob = file;
                 updateDownloadAttributes();
@@ -93,7 +95,7 @@
     }
 
     function convertToWebP(img) {
-        const res    = window.getOutputResolution(); 
+        const res    = window.getOutputResolution();
         const canvas = document.createElement('canvas');
         canvas.width = res; canvas.height = res;
         const ctx    = canvas.getContext('2d');
@@ -105,7 +107,6 @@
         const ih    = img.naturalHeight;
 
         if (iw === ih) {
-            // Safe layout path for perfect squares: no scaling or clipping math required
             ctx.drawImage(img, 0, 0, res, res);
         } else {
             const scale = Math.min(res / iw, res / ih);
@@ -157,7 +158,6 @@
 
         const sku = updateDownloadAttributes();
 
-        /* Strict 1000×1000 guard */
         const bitmap = await createImageBitmap(activeBlob);
         if (bitmap.width !== 1000 || bitmap.height !== 1000) {
             statusDisplay.style.color = 'red';
@@ -165,7 +165,6 @@
             return;
         }
 
-        /* Check if image already exists for this SKU */
         statusDisplay.style.color = '#17a2b8';
         statusDisplay.textContent = 'Checking for existing image…';
         try {

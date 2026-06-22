@@ -317,7 +317,7 @@
         const res         = window.getOutputResolution();
         const finalCanvas = document.createElement('canvas');
         finalCanvas.width = res; finalCanvas.height = res;
-        
+
         const ctx = finalCanvas.getContext('2d');
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, res, res);
@@ -325,11 +325,10 @@
 
         finalCanvas.toBlob(blob => {
             if (!blob) { setStatus('Crop failed — please try again.', '#dc3545'); return; }
-            // Directly feed a WebP blob to the pipeline
             sendToPipeline(blob, 'cropped.webp');
             setStatus('✓ Cropped image sent to the pipeline below.', '#28a745');
             previewPanel.style.display = 'none';
-        }, 'image/webp', 0.92); // Keep quality consistent
+        }, 'image/webp', 0.92);
     });
 
     confirmNo.addEventListener('click', () => { previewPanel.style.display = 'none'; });
@@ -343,8 +342,7 @@
         const ih       = sourceImg.naturalHeight;
         const longSide = Math.max(iw, ih);
         const scale    = longSide > res ? res / longSide : 1;
-        
-        // Explicitly round calculations to whole even integers
+
         const drawW    = Math.min(res, Math.round(iw * scale));
         const drawH    = Math.min(res, Math.round(ih * scale));
         const offX     = Math.max(0, Math.round((res - drawW) / 2));
@@ -355,8 +353,6 @@
         const ctx = finalCanvas.getContext('2d');
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, res, res);
-        
-        // Use the safe 6-argument drawImage to prevent sub-pixel canvas clipping bugs
         ctx.drawImage(sourceImg, offX, offY, drawW, drawH);
 
         finalCanvas.toBlob(blob => {
@@ -367,9 +363,10 @@
         }, 'image/webp', 0.92);
     });
 
+    /* ── Send finished blob to pipeline ── */
     function sendToPipeline(blob, filename) {
         if (typeof window.processAndValidateImage === 'function') {
-            window.processAndValidateImage(new File([blob], filename, { type: 'image/png' }));
+            window.processAndValidateImage(new File([blob], filename, { type: 'image/webp' }));
         }
         window.pasteActiveZone = 'pipeline';
         const pz = document.getElementById('pasteZone');
@@ -389,7 +386,7 @@
         cropStatus.textContent     = '';
     });
 
-    /* ── Paste routing ── */
+    /* ── Paste routing — capture phase so this fires before pipeline.js ── */
     window.addEventListener('paste', e => {
         if (window.pasteActiveZone !== 'crop') return;
         const items = e.clipboardData && e.clipboardData.items;
@@ -404,7 +401,7 @@
                 break;
             }
         }
-    });
+    }, true); // <-- capture: true — fires before any bubble-phase listeners (pipeline.js)
 
     /* ── Public API: load a remote URL directly into the crop UI ── */
     window.loadImageIntoCrop = function (url) {
@@ -413,8 +410,8 @@
         const img = new Image();
         img.crossOrigin = 'anonymous';
         img.onload = () => {
-            const iw = img.naturalWidth;
-            const ih = img.naturalHeight;
+            const iw        = img.naturalWidth;
+            const ih        = img.naturalHeight;
             const shortSide = Math.min(iw, ih);
             const isSquare  = iw === ih;
 
