@@ -6,6 +6,8 @@
  * previews the result before committing, or uses "Fit without cropping"
  * to pad the whole image onto a white square.
  *
+ * Accepts any image where at least one side is ≥ 1000px.
+ *
  * Depends on: shared.js (window.pasteActiveZone, window.getOutputResolution)
  * Calls:      window.processAndValidateImage() — defined in pipeline.js
  */
@@ -31,7 +33,7 @@
     const confirmNo     = document.getElementById('cropConfirmNo');
     const cropStatus    = document.getElementById('cropStatus');
 
-    const MIN_PX = 1000;
+    const MIN_PX = 1000; // at least one side must meet this
 
     let sourceImg    = null;
     let displayScale = 1;
@@ -85,20 +87,18 @@
             img.onload = () => {
                 const iw = img.naturalWidth;
                 const ih = img.naturalHeight;
-                const shortSide = Math.min(iw, ih);
+                const longSide = Math.max(iw, ih);
                 const isSquare = iw === ih;
+
+                // Reject only if BOTH sides are below MIN_PX
+                if (iw < MIN_PX && ih < MIN_PX) {
+                    setStatus(`Rejected: both sides too small (${iw}×${ih}) — at least one side must be ≥ ${MIN_PX}px.`, '#dc3545');
+                    return;
+                }
 
                 if (isSquare && iw >= MIN_PX) {
                     setStatus(`This image is already 1:1 (${iw}×${ih}) and ready to use — sending it directly to the pipeline.`, '#28a745');
                     sendToPipeline(dataURLtoBlob(ev.target.result), file.name || 'image.png');
-                    return;
-                }
-                if (isSquare && iw < MIN_PX) {
-                    setStatus(`Already 1:1 but too small (${iw}×${ih}) — must be ≥ ${MIN_PX}px.`, '#dc3545');
-                    return;
-                }
-                if (shortSide < MIN_PX) {
-                    setStatus(`Rejected: shortest side is ${shortSide}px — must be ≥ ${MIN_PX}px.`, '#dc3545');
                     return;
                 }
 
@@ -111,8 +111,10 @@
     }
 
     function setStatus(msg, color) {
-        cropStatus.textContent  = msg;
-        cropStatus.style.color  = color || '#6c757d';
+        cropStatus.textContent = msg;
+        cropStatus.style.color = color || '#6c757d';
+        // Always make status visible even if workspace is hidden
+        cropStatus.style.display = 'block';
     }
 
     /* ── Crop UI init ── */
@@ -401,7 +403,7 @@
                 break;
             }
         }
-    }, true); // <-- capture: true — fires before any bubble-phase listeners (pipeline.js)
+    }, true); // capture: true — fires before any bubble-phase listeners (pipeline.js)
 
     /* ── Public API: load a remote URL directly into the crop UI ── */
     window.loadImageIntoCrop = function (url) {
@@ -410,10 +412,15 @@
         const img = new Image();
         img.crossOrigin = 'anonymous';
         img.onload = () => {
-            const iw        = img.naturalWidth;
-            const ih        = img.naturalHeight;
-            const shortSide = Math.min(iw, ih);
-            const isSquare  = iw === ih;
+            const iw       = img.naturalWidth;
+            const ih       = img.naturalHeight;
+            const isSquare = iw === ih;
+
+            // Reject only if BOTH sides are below MIN_PX
+            if (iw < MIN_PX && ih < MIN_PX) {
+                setStatus(`Image too small (${iw}×${ih}) — at least one side must be ≥ ${MIN_PX}px.`, '#dc3545');
+                return;
+            }
 
             if (isSquare && iw >= MIN_PX) {
                 const canvas = document.createElement('canvas');
@@ -423,14 +430,6 @@
                     sendToPipeline(blob, 'image.webp');
                     setStatus(`Already 1:1 (${iw}×${ih}) — sent straight to the pipeline.`, '#28a745');
                 }, 'image/webp', 0.92);
-                return;
-            }
-            if (isSquare && iw < MIN_PX) {
-                setStatus(`Already 1:1 but too small (${iw}×${ih}) — must be ≥ ${MIN_PX}px.`, '#dc3545');
-                return;
-            }
-            if (shortSide < MIN_PX) {
-                setStatus(`Image too small: shortest side is ${shortSide}px — must be ≥ ${MIN_PX}px.`, '#dc3545');
                 return;
             }
 
