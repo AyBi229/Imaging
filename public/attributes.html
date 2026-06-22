@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Attribute Editor — WooCommerce Pipeline</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        /* ── Page-specific styles ── */
+        .attr-lookup-section {
+            max-width: 700px;
+            margin: 0 auto 2rem;
+        }
+
+        .attr-lookup-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .attr-lookup-row input {
+            flex: 1;
+        }
+
+        /* Breadcrumb / meta strip */
+        #productMeta {
+            display: none;
+            background: #1e1e2e;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 0.9rem 1.1rem;
+            margin: 1.25rem 0;
+            font-size: 0.85rem;
+            color: #adb5bd;
+            line-height: 1.7;
+        }
+
+        #productMeta strong {
+            color: #e9ecef;
+        }
+
+        #productMeta .meta-category {
+            display: inline-block;
+            background: #2d3748;
+            border-radius: 4px;
+            padding: 2px 8px;
+            margin-left: 4px;
+            color: #90cdf4;
+            font-size: 0.82rem;
+        }
+
+        /* Attribute form */
+        #attributeForm {
+            display: none;
+        }
+
+        .attr-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem 1.5rem;
+            margin: 1.25rem 0 1.5rem;
+        }
+
+        @media (max-width: 600px) {
+            .attr-grid { grid-template-columns: 1fr; }
+        }
+
+        .attr-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .attr-field label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #adb5bd;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .attr-field input,
+        .attr-field select {
+            padding: 0.45rem 0.6rem;
+            border: 1px solid #444;
+            border-radius: 5px;
+            background: #1a1a2e;
+            color: #e9ecef;
+            font-size: 0.9rem;
+            transition: border-color 0.15s;
+        }
+
+        .attr-field input:focus,
+        .attr-field select:focus {
+            outline: none;
+            border-color: #6c8ebf;
+        }
+
+        .attr-field .attr-hint {
+            font-size: 0.74rem;
+            color: #6c757d;
+        }
+
+        /* Required badge */
+        .badge-required {
+            display: inline-block;
+            background: #4a3340;
+            color: #f48fb1;
+            font-size: 0.68rem;
+            font-weight: 700;
+            border-radius: 3px;
+            padding: 1px 5px;
+            margin-left: 5px;
+            vertical-align: middle;
+            letter-spacing: 0.03em;
+        }
+
+        /* Save bar */
+        .save-bar {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border-top: 1px solid #333;
+            padding-top: 1.1rem;
+            margin-top: 0.5rem;
+        }
+
+        .save-bar button {
+            padding: 0.5rem 1.4rem;
+        }
+
+        #saveStatus {
+            font-size: 0.85rem;
+            color: #adb5bd;
+        }
+
+        #saveStatus.success { color: #69db7c; }
+        #saveStatus.error   { color: #ff6b6b; }
+
+        /* Empty / loading states */
+        #attrStatus {
+            color: #adb5bd;
+            font-size: 0.88rem;
+            margin-top: 0.6rem;
+            min-height: 1.4em;
+        }
+
+        #attrStatus.error { color: #ff6b6b; }
+
+        /* Nav */
+        .page-nav {
+            margin-bottom: 1.5rem;
+        }
+
+        .page-nav a {
+            color: #6c8ebf;
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+
+        .page-nav a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <div class="page-nav">
+        <a href="/index.html">← Back to Image Pipeline</a>
+    </div>
+
+    <h2>Product Attribute Editor</h2>
+
+    <!-- MODULE: SKU Lookup -->
+    <div class="attr-lookup-section">
+        <h3>Look Up Grouped Product by SKU</h3>
+        <p>Enter a grouped product SKU. The app will find its category and load the attributes assigned to it.</p>
+        <div class="attr-lookup-row">
+            <input
+                type="text"
+                id="attrSkuInput"
+                placeholder="e.g. GRP-TC5A-2SC1B"
+                autocomplete="off"
+                spellcheck="false"
+            >
+            <button id="attrLookupBtn">Look up</button>
+        </div>
+        <div id="attrStatus"></div>
+    </div>
+
+    <!-- Product meta strip (shown after lookup) -->
+    <div id="productMeta"></div>
+
+    <!-- Attribute form (shown after lookup) -->
+    <div id="attributeForm">
+        <h3>Category Attributes</h3>
+        <p>Fill in the values for each attribute, then save them back to the product.</p>
+
+        <div class="attr-grid" id="attrGrid">
+            <!-- Fields injected by attributeEditor.js -->
+        </div>
+
+        <div class="save-bar">
+            <button id="saveAttrBtn">Save to product</button>
+            <span id="saveStatus"></span>
+        </div>
+    </div>
+
+    <script src="/js/shared.js"></script>
+    <script src="/js/attributeEditor.js"></script>
+</body>
+</html>
