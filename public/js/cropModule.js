@@ -405,4 +405,47 @@
             }
         }
     });
+
+    /* ── Public API: load a remote URL directly into the crop UI ── */
+    window.loadImageIntoCrop = function (url) {
+        cropStatus.textContent = '';
+        const proxied = `/proxy-image?url=${encodeURIComponent(url)}`;
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            const iw = img.naturalWidth;
+            const ih = img.naturalHeight;
+            const shortSide = Math.min(iw, ih);
+            const isSquare  = iw === ih;
+
+            if (isSquare && iw >= MIN_PX) {
+                const canvas = document.createElement('canvas');
+                canvas.width = iw; canvas.height = ih;
+                canvas.getContext('2d').drawImage(img, 0, 0);
+                canvas.toBlob(blob => {
+                    sendToPipeline(blob, 'image.webp');
+                    setStatus(`Already 1:1 (${iw}×${ih}) — sent straight to the pipeline.`, '#28a745');
+                }, 'image/webp', 0.92);
+                return;
+            }
+            if (isSquare && iw < MIN_PX) {
+                setStatus(`Already 1:1 but too small (${iw}×${ih}) — must be ≥ ${MIN_PX}px.`, '#dc3545');
+                return;
+            }
+            if (shortSide < MIN_PX) {
+                setStatus(`Image too small: shortest side is ${shortSide}px — must be ≥ ${MIN_PX}px.`, '#dc3545');
+                return;
+            }
+
+            sourceImg = img;
+            initCropUI();
+            workspace.style.display = 'block';
+            dropZone.style.display  = 'none';
+            document.getElementById('cropDropZone').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+        img.onerror = () => {
+            setStatus('Failed to load the selected image into the crop tool.', '#dc3545');
+        };
+        img.src = proxied;
+    };
 })();

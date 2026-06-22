@@ -344,21 +344,40 @@
         }[c]));
     }
 
-    /* ── Confirm: fetch the full image blob ── */
+    /* ── Confirm: send image straight to the crop pipeline ── */
     confirmBtn.addEventListener('click', async () => {
         if (!selectedUrl) return;
         confirmBtn.disabled    = true;
         confirmBtn.textContent = 'Loading…';
         try {
-            const res = await fetch(`/proxy-image?url=${encodeURIComponent(selectedUrl)}`);
-            if (!res.ok) throw new Error('Could not fetch image');
-            confirmBtn._blob           = await res.blob();
-            copyImageBtn.style.display = 'block';
-            setStatus('Image ready. Copy it, then paste it into the pipeline below.', '#28a745');
+            // Pre-check dimensions via a quick Image load through the proxy
+            const proxied = `/proxy-image?url=${encodeURIComponent(selectedUrl)}`;
+            await new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    const shortSide = Math.min(img.naturalWidth, img.naturalHeight);
+                    if (shortSide < 1000) {
+                        reject(new Error(`Image too small (${img.naturalWidth}×${img.naturalHeight}) — shortest side must be ≥ 1000px.`));
+                    } else {
+                        resolve();
+                    }
+                };
+                img.onerror = () => reject(new Error('Could not load image for size check.'));
+                img.src = proxied;
+            });
+
             const sku = skuInput.value.trim();
             if (sku) document.getElementById('customFileName').value = sku;
+
+            if (typeof window.loadImageIntoCrop === 'function') {
+                window.loadImageIntoCrop(selectedUrl);
+                setStatus('Image sent to the crop pipeline below ↓', '#28a745');
+                document.getElementById('cropDropZone').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                throw new Error('Crop module not ready.');
+            }
         } catch (err) {
-            setStatus(`Failed to load image: ${err.message}`, '#dc3545');
+            setStatus(`Failed: ${err.message}`, '#dc3545');
         } finally {
             confirmBtn.disabled    = false;
             confirmBtn.textContent = 'Use this image ↓';
