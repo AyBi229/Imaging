@@ -38,6 +38,7 @@ app.get('/api/attributes/category', getCategoryAttributes);
 app.put('/api/attributes/save',     saveAttributes);
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+// app.listen(PORT, () => {
+//     console.log(`Server running on port ${PORT}`);
+// });
+module.exports = app;
