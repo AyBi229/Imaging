@@ -59,6 +59,9 @@
 /* ── Product meta strip ───────────────────────────── */
 #productMeta {
     display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
     background: #e7f3ff;
     border: 1px solid #b3d4ff;
     border-radius: 6px;
@@ -66,6 +69,13 @@
     margin-bottom: 20px;
     font-size: 0.88em;
     color: #004085;
+}
+#productMeta > span {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 #productMeta strong { color: #003069; }
 .meta-category {
@@ -76,6 +86,18 @@
     font-size: 0.82em;
     font-weight: 600;
 }
+#copyAttrsBtn {
+    flex-shrink: 0;
+    background: none;
+    border: 1px solid #b3d4ff;
+    border-radius: 3px;
+    color: #004085;
+    font-size: 0.82em;
+    padding: 2px 8px;
+    cursor: pointer;
+    font-family: inherit;
+}
+#copyAttrsBtn:hover { background: #cce5ff; }
 
 /* ── Attribute form ───────────────────────────────── */
 #attributeForm {
@@ -85,6 +107,8 @@
     border-radius: 8px;
     padding: 20px;
     margin-bottom: 28px;
+    box-sizing: border-box;
+    width: 100%;
 }
 #attributeForm h3 { margin: 0 0 4px 0; font-size: 1em; color: #495057; }
 #attributeForm > p { margin: 0 0 18px 0; font-size: 0.85em; color: #868e96; }
@@ -94,6 +118,8 @@
     grid-template-columns: 1fr 1fr;
     gap: 16px 24px;
     margin-bottom: 20px;
+    width: 100%;
+    box-sizing: border-box;
 }
 @media (max-width: 500px) {
     .attr-grid { grid-template-columns: 1fr; }
@@ -103,6 +129,7 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+    min-width: 0;
 }
 .attr-field label {
     font-size: 0.78em;
@@ -126,6 +153,8 @@
 }
 .attr-field input,
 .attr-field select {
+    width: 100%;
+    box-sizing: border-box;
     padding: 8px 10px;
     border: 1px solid #ccc;
     border-radius: 4px;
