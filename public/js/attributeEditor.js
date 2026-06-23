@@ -11,9 +11,11 @@ const attributeForm = document.getElementById('attributeForm');
 const attrGrid      = document.getElementById('attrGrid');
 const saveAttrBtn   = document.getElementById('saveAttrBtn');
 const saveStatus    = document.getElementById('saveStatus');
+const childrenList  = document.getElementById('childrenList');
 
 // ── State ─────────────────────────────────────────────────────────────────
 let currentProductId = null;
+let currentChildren  = [];
 let currentAttributes = [];
 
 // ── Real API calls ────────────────────────────────────────────────────────
@@ -31,14 +33,15 @@ async function fetchCategoryAttributes(categoryId) {
     return data.attributes;
 }
 
-async function saveProductAttributes(productId, attributes) {
+async function saveProductAttributes(productIds, attributes) {
     const res = await fetch(`/api/attributes/save?x-vercel-protection-bypass=${BYPASS}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId, attributes }),
+        body: JSON.stringify({ productIds, attributes }),
     });
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.error || 'Save failed.');
+    return data;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -72,6 +75,39 @@ function renderProductMeta(product) {
         </span>
         <button id="copyAttrsBtn" onclick="copyAttributeLabels()">Copy attributes</button>
     `;
+}
+
+function renderChildrenList(children) {
+    childrenList.innerHTML = '';
+
+    if (!children || !children.length) {
+        childrenList.style.display = 'none';
+        return;
+    }
+
+    childrenList.style.display = 'block';
+
+    const header = document.createElement('div');
+    header.className = 'children-header';
+    header.innerHTML = `<span>Child Products <span class="children-count">${children.length}</span></span><span class="children-note">All will receive the same attributes on save</span>`;
+    childrenList.appendChild(header);
+
+    const rows = document.createElement('div');
+    rows.className = 'children-rows';
+
+    children.forEach(child => {
+        const row = document.createElement('div');
+        row.className = 'child-row';
+        row.id        = `child-row-${child.id}`;
+        row.innerHTML = `
+            <span class="child-name">${escapeHtml(child.name)}</span>
+            <span class="child-sku">${escapeHtml(child.sku)}</span>
+            <span class="child-status pending" id="child-status-${child.id}">pending</span>
+        `;
+        rows.appendChild(row);
+    });
+
+    childrenList.appendChild(rows);
 }
 
 function renderAttributeForm(attributes) {
@@ -141,15 +177,18 @@ async function runLookup() {
 
     productMeta.style.display   = 'none';
     attributeForm.style.display = 'none';
+    childrenList.style.display  = 'none';
     attrGrid.innerHTML          = '';
     setSaveStatus('');
     setStatus('Looking up product…');
     lookupBtn.disabled = true;
 
     try {
-        const product = await fetchProductBySku(sku);
+        const product    = await fetchProductBySku(sku);
         currentProductId = product.id;
+        currentChildren  = product.children || [];
         renderProductMeta(product);
+        renderChildrenList(currentChildren);
 
         setStatus('Loading category attributes…');
         const attributes = await fetchCategoryAttributes(product.categoryId);
@@ -165,6 +204,7 @@ async function runLookup() {
     } catch (err) {
         setStatus(err.message || 'Lookup failed.', true);
         currentProductId = null;
+        currentChildren  = [];
     } finally {
         lookupBtn.disabled = false;
     }
@@ -180,14 +220,44 @@ async function runSave() {
         return;
     }
 
+    // All child IDs + parent ID
+    const productIds = [currentProductId, ...currentChildren.map(c => c.id)];
+
+    // Reset child statuses to saving
+    currentChildren.forEach(c => {
+        const el = document.getElementById(`child-status-${c.id}`);
+        if (el) { el.textContent = 'saving…'; el.className = 'child-status saving'; }
+    });
+
     setSaveStatus('Saving…');
     saveAttrBtn.disabled = true;
 
     try {
-        await saveProductAttributes(currentProductId, attributes);
-        setSaveStatus('Saved successfully.', 'success');
+        const result = await saveProductAttributes(productIds, attributes);
+
+        // Update child row statuses
+        currentChildren.forEach(c => {
+            const el = document.getElementById(`child-status-${c.id}`);
+            if (!el) return;
+            if (result.saved && result.saved.includes(c.id)) {
+                el.textContent = 'saved ✓'; el.className = 'child-status saved';
+            } else {
+                el.textContent = 'failed'; el.className = 'child-status failed';
+            }
+        });
+
+        const failCount = (result.errors || []).length;
+        if (failCount) {
+            setSaveStatus(`Saved with ${failCount} error(s).`, 'error');
+        } else {
+            setSaveStatus(`Saved to parent + ${currentChildren.length} child product(s).`, 'success');
+        }
     } catch (err) {
         setSaveStatus(err.message || 'Save failed.', 'error');
+        currentChildren.forEach(c => {
+            const el = document.getElementById(`child-status-${c.id}`);
+            if (el) { el.textContent = 'failed'; el.className = 'child-status failed'; }
+        });
     } finally {
         saveAttrBtn.disabled = false;
     }

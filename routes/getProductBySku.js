@@ -17,18 +17,21 @@ async function getProductBySku(req, res) {
             require "${WP_PATH}/wp-load.php";
 
             $args = array(
-                "post_type"   => "product",
-                "post_status" => "any",
+                "post_type"      => "product",
+                "post_status"    => "any",
                 "posts_per_page" => 1,
-                "meta_query"  => array(array(
+                "meta_query"     => array(array(
                     "key"   => "_sku",
                     "value" => "${sku.replace(/'/g, "\\'")}",
                 )),
             );
             $query = new WP_Query($args);
-            if (!$query->have_posts()) { echo json_encode(["error" => "No product found with SKU: ${sku.replace(/'/g, "\\'")}"]); exit(1); }
+            if (!$query->have_posts()) {
+                echo json_encode(["error" => "No product found with SKU: ${sku.replace(/'/g, "\\'")}"]);
+                exit(1);
+            }
 
-            $post = $query->posts[0];
+            $post    = $query->posts[0];
             $product = wc_get_product($post->ID);
             if (!$product || $product->get_type() !== "grouped") {
                 echo json_encode(["error" => "Product is not a grouped product."]);
@@ -38,12 +41,26 @@ async function getProductBySku(req, res) {
             $categories = get_the_terms($post->ID, "product_cat");
             $cat = ($categories && !is_wp_error($categories)) ? $categories[0] : null;
 
+            // Fetch children
+            $child_ids = $product->get_children();
+            $children  = array();
+            foreach ($child_ids as $child_id) {
+                $child = wc_get_product($child_id);
+                if (!$child) continue;
+                $children[] = array(
+                    "id"   => $child_id,
+                    "name" => $child->get_name(),
+                    "sku"  => $child->get_sku(),
+                );
+            }
+
             echo json_encode([
                 "id"           => $post->ID,
                 "name"         => $post->post_title,
                 "sku"          => $product->get_sku(),
                 "categoryId"   => $cat ? $cat->term_id : null,
                 "categoryName" => $cat ? $cat->name    : "Uncategorized",
+                "children"     => $children,
             ]);
         ' 2>&1`;
 
@@ -54,7 +71,7 @@ async function getProductBySku(req, res) {
             stream.on('data', d => { output += d.toString(); });
             stream.stderr.on('data', d => { output += d.toString(); });
 
-            stream.on('close', (code) => {
+            stream.on('close', () => {
                 conn.end();
                 try {
                     const parsed = JSON.parse(output.trim());
