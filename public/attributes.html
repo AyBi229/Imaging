@@ -35,23 +35,8 @@
     <!-- Product meta strip (shown after lookup) -->
     <div id="productMeta"></div>
 
-    <!-- Children list (shown after lookup) -->
-    <div id="childrenList"></div>
-
-    <!-- Attribute form (shown after lookup) -->
-    <div id="attributeForm">
-        <h3>Category Attributes</h3>
-        <p>Fill in the values for each attribute, then save them back to the product.</p>
-
-        <div class="attr-grid" id="attrGrid">
-            <!-- Fields injected by attributeEditor.js -->
-        </div>
-
-        <div class="save-bar">
-            <button id="saveAttrBtn">Save to product</button>
-            <span id="saveStatus"></span>
-        </div>
-    </div>
+    <!-- Children + parent section (injected by JS) -->
+    <div id="childrenSection"></div>
 
     <script src="/js/shared.js"></script>
     <script src="/js/attributeEditor.js"></script>

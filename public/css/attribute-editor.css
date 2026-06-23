@@ -203,3 +203,106 @@
 }
 #saveStatus.success { color: #155724; }
 #saveStatus.error   { color: #dc3545; }
+/* ── Child cards ──────────────────────────────────── */
+#childrenSection {
+    display: none;
+}
+
+.child-card {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+}
+
+.child-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.child-card-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.child-card-title strong {
+    font-size: 0.95em;
+    color: #333;
+}
+
+.child-sku {
+    font-family: monospace;
+    font-size: 0.85em;
+    color: #6c757d;
+}
+
+.child-status {
+    font-size: 0.75em;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+}
+.child-status.pending { background: #e9ecef; color: #6c757d; }
+.child-status.saving  { background: #fff3cd; color: #856404; }
+.child-status.saved   { background: #d4edda; color: #155724; }
+.child-status.failed  { background: #f8d7da; color: #721c24; }
+
+.child-save-btn {
+    padding: 7px 16px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.88em;
+    font-weight: 600;
+    cursor: pointer;
+}
+.child-save-btn:hover    { background: #0056b3; }
+.child-save-btn:disabled { background: #6ea8fe; cursor: not-allowed; }
+
+.child-save-status {
+    font-size: 0.85em;
+    min-height: 18px;
+}
+.child-save-status.success { color: #155724; }
+.child-save-status.error   { color: #dc3545; }
+
+/* ── Parent save bar ──────────────────────────────── */
+.parent-save-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: #e7f3ff;
+    border: 1px solid #b3d4ff;
+    border-radius: 8px;
+    margin-top: 8px;
+}
+
+.save-parent-btn {
+    padding: 9px 20px;
+    background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.95em;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.save-parent-btn:hover    { background: #218838; }
+.save-parent-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.parent-save-status {
+    font-size: 0.88em;
+    min-height: 18px;
+}
+.parent-save-status.success { color: #155724; }
+.parent-save-status.error   { color: #dc3545; }
