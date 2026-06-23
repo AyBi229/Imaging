@@ -14,6 +14,8 @@ const saveStatus    = document.getElementById('saveStatus');
 
 // ── State ─────────────────────────────────────────────────────────────────
 let currentProductId = null;
+let currentAttributes = [];
+let currentAttributes = [];
 
 // ── Real API calls ────────────────────────────────────────────────────────
 async function fetchProductBySku(sku) {
@@ -66,7 +68,8 @@ function renderProductMeta(product) {
         <strong>${escapeHtml(product.name)}</strong>
         &nbsp;·&nbsp; SKU: <strong>${escapeHtml(product.sku)}</strong>
         &nbsp;·&nbsp; Category: <span class="meta-category">${escapeHtml(product.categoryName)}</span>
-        &nbsp;·&nbsp; ID: ${product.id}
+        &nbsp;·&nbsp; ID: ${product.id}nbsp;·&nbsp;·&nbsp; ID: ${product.id}nbsp; ID: ${product.id}
+        <button id="copyAttrsBtn" onclick="copyAttributeLabels()">Copy attributes</button>
     `;
 }
 
@@ -155,6 +158,8 @@ async function runLookup() {
             return;
         }
 
+        currentAttributes = attributes;
+        currentAttributes = attributes;
         renderAttributeForm(attributes);
         setStatus('');
     } catch (err) {
@@ -192,3 +197,14 @@ async function runSave() {
 lookupBtn.addEventListener('click', runLookup);
 skuInput.addEventListener('keydown', e => { if (e.key === 'Enter') runLookup(); });
 saveAttrBtn.addEventListener('click', runSave);
+
+// ── Copy attribute labels ─────────────────────────────────────────────────
+function copyAttributeLabels() {
+    const text = currentAttributes.map(a => a.label).join(', ');
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copyAttrsBtn');
+        const orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = orig; }, 1500);
+    });
+}
