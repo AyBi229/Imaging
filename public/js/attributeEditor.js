@@ -62,7 +62,7 @@ function escapeHtml(str) {
 
 // ── Render ────────────────────────────────────────────────────────────────
 function renderProductMeta(product) {
-    productMeta.style.display = 'block';
+    productMeta.style.display = 'flex';
     productMeta.innerHTML = `
         <strong>${escapeHtml(product.name)}</strong>
         &nbsp;·&nbsp; SKU: <strong>${escapeHtml(product.sku)}</strong>

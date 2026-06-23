@@ -174,10 +174,3 @@
 }
 #saveStatus.success { color: #155724; }
 #saveStatus.error   { color: #dc3545; }
-
-#productMeta {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 6px;
-}
