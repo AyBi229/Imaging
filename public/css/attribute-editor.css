@@ -1,0 +1,162 @@
+/* ── Attribute Editor ─────────────────────────────────────── */
+
+#productMeta {
+    display: none;
+    background: #1a1a2e;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin: 16px 0;
+    font-size: 14px;
+    color: #ccc;
+}
+
+#productMeta strong {
+    color: #fff;
+}
+
+.meta-category {
+    background: #2a5298;
+    color: #fff;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 12px;
+}
+
+#attrStatus {
+    margin: 8px 0;
+    font-size: 14px;
+    color: #aaa;
+    min-height: 20px;
+}
+
+#attrStatus.error {
+    color: #e05c5c;
+}
+
+/* ── Attribute form ───────────────────────────────────────── */
+
+#attributeForm {
+    display: none;
+    margin-top: 24px;
+}
+
+#attributeForm h2 {
+    font-size: 18px;
+    margin-bottom: 6px;
+    color: #fff;
+}
+
+#attributeForm > p {
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 16px;
+}
+
+#attrGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px 32px;
+    margin-bottom: 24px;
+}
+
+@media (max-width: 600px) {
+    #attrGrid { grid-template-columns: 1fr; }
+}
+
+.attr-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.attr-field label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #aaa;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.badge-required {
+    background: #c0392b;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    border-radius: 3px;
+    padding: 1px 5px;
+    text-transform: uppercase;
+}
+
+.attr-field input,
+.attr-field select {
+    background: #1e1e2e;
+    border: 1px solid #444;
+    border-radius: 5px;
+    color: #eee;
+    font-size: 14px;
+    padding: 8px 10px;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.attr-field input:focus,
+.attr-field select:focus {
+    border-color: #4a90d9;
+}
+
+.attr-field input::placeholder {
+    color: #555;
+}
+
+.attr-field select option {
+    background: #1e1e2e;
+}
+
+.attr-hint {
+    font-size: 11px;
+    color: #666;
+}
+
+/* ── Divider above save button ────────────────────────────── */
+
+#attributeForm hr {
+    border: none;
+    border-top: 1px solid #333;
+    margin: 8px 0 20px;
+}
+
+/* ── Save button & status ─────────────────────────────────── */
+
+#saveAttrBtn {
+    background: #2a5298;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 24px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+#saveAttrBtn:hover:not(:disabled) {
+    background: #3a6bc0;
+}
+
+#saveAttrBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#saveStatus {
+    margin-top: 10px;
+    font-size: 13px;
+    min-height: 18px;
+}
+
+#saveStatus.success { color: #4caf50; }
+#saveStatus.error   { color: #e05c5c; }
