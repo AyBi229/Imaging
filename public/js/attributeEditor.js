@@ -14,8 +14,6 @@ const saveStatus    = document.getElementById('saveStatus');
 
 // ── State ─────────────────────────────────────────────────────────────────
 let currentProductId = null;
-let currentAttributes = [];
-let currentAttributes = [];
 
 // ── Real API calls ────────────────────────────────────────────────────────
 async function fetchProductBySku(sku) {
