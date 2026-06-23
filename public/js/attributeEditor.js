@@ -68,9 +68,21 @@ function buildAttrFields(attributes, prefix) {
 
         let inputEl;
         if (attr.type === 'select' && attr.options?.length) {
-            inputEl = document.createElement('select');
-            inputEl.innerHTML = `<option value="">— select —</option>`
-                + attr.options.map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join('');
+            const select = document.createElement('select');
+            select.id               = `${prefix}_${attr.id}`;
+            select.multiple         = true;
+            select.dataset.attrId   = attr.id;
+            select.dataset.required = attr.required ? 'true' : 'false';
+            select.size             = Math.min(attr.options.length, 6);
+
+            attr.options.forEach(opt => {
+                const option = document.createElement('option');
+                option.value       = opt;
+                option.textContent = opt;
+                select.appendChild(option);
+            });
+
+            field.appendChild(select);
         } else {
             inputEl = document.createElement('input');
             inputEl.type = attr.type === 'number' ? 'number' : 'text';
@@ -98,16 +110,25 @@ function buildAttrFields(attributes, prefix) {
 }
 
 function collectFromGrid(grid) {
-    const inputs  = grid.querySelectorAll('[data-attr-id]');
     const result  = [];
     const missing = [];
 
-    inputs.forEach(el => {
+    // Text/number inputs
+    grid.querySelectorAll('input[data-attr-id]').forEach(el => {
         const val = el.value.trim();
         if (!val && el.dataset.required === 'true') {
             missing.push(el.previousElementSibling?.textContent.replace('REQUIRED', '').trim());
         }
         result.push({ id: el.dataset.attrId, options: val ? [val] : [] });
+    });
+
+    // Multi-selects
+    grid.querySelectorAll('select[data-attr-id]').forEach(el => {
+        const selected = Array.from(el.selectedOptions).map(o => o.value);
+        if (!selected.length && el.dataset.required === 'true') {
+            missing.push(el.previousElementSibling?.textContent.replace('REQUIRED', '').trim());
+        }
+        result.push({ id: el.dataset.attrId, options: selected });
     });
 
     return { attributes: result, missing };
