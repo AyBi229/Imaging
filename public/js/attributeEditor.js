@@ -64,11 +64,13 @@ function escapeHtml(str) {
 function renderProductMeta(product) {
     productMeta.style.display = 'flex';
     productMeta.innerHTML = `
-        <strong>${escapeHtml(product.name)}</strong>
-        &nbsp;·&nbsp; SKU: <strong>${escapeHtml(product.sku)}</strong>
-        &nbsp;·&nbsp; Category: <span class="meta-category">${escapeHtml(product.categoryName)}</span>
-        &nbsp;·&nbsp; ID: ${product.id}
-        &nbsp;·&nbsp; <button id="copyAttrsBtn" onclick="copyAttributeLabels()">Copy attributes</button>
+        <span>
+            <strong>${escapeHtml(product.name)}</strong>
+            &nbsp;·&nbsp; SKU: <strong>${escapeHtml(product.sku)}</strong>
+            &nbsp;·&nbsp; Category: <span class="meta-category">${escapeHtml(product.categoryName)}</span>
+            &nbsp;·&nbsp; ID: ${product.id}
+        </span>
+        <button id="copyAttrsBtn" onclick="copyAttributeLabels()">Copy attributes</button>
     `;
 }
 
