@@ -1,66 +1,101 @@
-/* ── Attribute Editor ─────────────────────────────────────── */
+/* ── Attribute Editor ─────────────────────────────── */
 
-#productMeta {
-    display: none;
-    background: #1a1a2e;
-    border: 1px solid #333;
-    border-radius: 6px;
-    padding: 12px 16px;
-    margin: 16px 0;
-    font-size: 14px;
-    color: #ccc;
+.page-nav {
+    margin-bottom: 20px;
+    font-size: 0.88em;
 }
-
-#productMeta strong {
-    color: #fff;
+.page-nav a {
+    color: #007bff;
+    text-decoration: none;
 }
+.page-nav a:hover { text-decoration: underline; }
 
-.meta-category {
-    background: #2a5298;
-    color: #fff;
+.attr-lookup-section {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 28px;
+}
+.attr-lookup-section h3 { margin: 0 0 4px 0; font-size: 1em; color: #495057; }
+.attr-lookup-section p  { margin: 0 0 14px 0; font-size: 0.85em; color: #868e96; }
+
+.attr-lookup-row { display: flex; gap: 8px; }
+.attr-lookup-row input {
+    flex: 1;
+    padding: 9px 12px;
+    border: 1px solid #ccc;
     border-radius: 4px;
-    padding: 2px 8px;
-    font-size: 12px;
+    font-size: 1em;
+    font-family: inherit;
 }
+.attr-lookup-row input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.15);
+}
+#attrLookupBtn {
+    padding: 9px 18px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+#attrLookupBtn:hover    { background: #0056b3; }
+#attrLookupBtn:disabled { background: #6ea8fe; cursor: not-allowed; }
 
 #attrStatus {
-    margin: 8px 0;
-    font-size: 14px;
-    color: #aaa;
-    min-height: 20px;
+    margin-top: 10px;
+    font-size: 0.88em;
+    color: #6c757d;
+    min-height: 18px;
+}
+#attrStatus.error { color: #dc3545; }
+
+/* ── Product meta strip ───────────────────────────── */
+#productMeta {
+    display: none;
+    background: #e7f3ff;
+    border: 1px solid #b3d4ff;
+    border-radius: 6px;
+    padding: 10px 16px;
+    margin-bottom: 20px;
+    font-size: 0.88em;
+    color: #004085;
+}
+#productMeta strong { color: #003069; }
+.meta-category {
+    background: #007bff;
+    color: #fff;
+    border-radius: 3px;
+    padding: 1px 7px;
+    font-size: 0.82em;
+    font-weight: 600;
 }
 
-#attrStatus.error {
-    color: #e05c5c;
-}
-
-/* ── Attribute form ───────────────────────────────────────── */
-
+/* ── Attribute form ───────────────────────────────── */
 #attributeForm {
     display: none;
-    margin-top: 24px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 28px;
 }
-
-#attributeForm h2 {
-    font-size: 18px;
-    margin-bottom: 6px;
-    color: #fff;
-}
-
-#attributeForm > p {
-    font-size: 13px;
-    color: #888;
-    margin-bottom: 16px;
-}
+#attributeForm h3 { margin: 0 0 4px 0; font-size: 1em; color: #495057; }
+#attributeForm > p { margin: 0 0 18px 0; font-size: 0.85em; color: #868e96; }
 
 .attr-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 20px 32px;
-    margin-bottom: 24px;
+    gap: 16px 24px;
+    margin-bottom: 20px;
 }
-
-@media (max-width: 600px) {
+@media (max-width: 500px) {
     .attr-grid { grid-template-columns: 1fr; }
 }
 
@@ -69,94 +104,73 @@
     flex-direction: column;
     gap: 4px;
 }
-
 .attr-field label {
-    font-size: 11px;
+    font-size: 0.78em;
     font-weight: 600;
-    letter-spacing: 0.07em;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
-    color: #aaa;
+    color: #495057;
     display: flex;
     align-items: center;
     gap: 6px;
 }
-
 .badge-required {
-    background: #c0392b;
+    background: #dc3545;
     color: #fff;
-    font-size: 9px;
+    font-size: 0.7em;
     font-weight: 700;
-    letter-spacing: 0.05em;
     border-radius: 3px;
     padding: 1px 5px;
     text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
-
 .attr-field input,
 .attr-field select {
-    background: #1e1e2e;
-    border: 1px solid #444;
-    border-radius: 5px;
-    color: #eee;
-    font-size: 14px;
     padding: 8px 10px;
-    outline: none;
-    transition: border-color 0.15s;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 0.95em;
+    font-family: inherit;
+    color: #333;
+    background: #fff;
+    transition: border-color 0.15s, box-shadow 0.15s;
 }
-
 .attr-field input:focus,
 .attr-field select:focus {
-    border-color: #4a90d9;
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.15);
 }
-
-.attr-field input::placeholder {
-    color: #555;
-}
-
-.attr-field select option {
-    background: #1e1e2e;
-}
-
+.attr-field input::placeholder { color: #adb5bd; }
 .attr-hint {
-    font-size: 11px;
-    color: #666;
+    font-size: 0.78em;
+    color: #868e96;
 }
 
-/* ── Divider above save button ────────────────────────────── */
-
-#attributeForm hr {
-    border: none;
-    border-top: 1px solid #333;
-    margin: 8px 0 20px;
+/* ── Save bar ─────────────────────────────────────── */
+.save-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-top: 16px;
+    border-top: 1px solid #dee2e6;
 }
-
-/* ── Save button & status ─────────────────────────────────── */
-
 #saveAttrBtn {
-    background: #2a5298;
-    color: #fff;
+    padding: 9px 20px;
+    background: #28a745;
+    color: white;
     border: none;
-    border-radius: 5px;
-    padding: 10px 24px;
-    font-size: 14px;
+    border-radius: 4px;
+    font-size: 0.95em;
+    font-weight: 600;
     cursor: pointer;
-    transition: background 0.15s;
 }
-
-#saveAttrBtn:hover:not(:disabled) {
-    background: #3a6bc0;
-}
-
-#saveAttrBtn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
+#saveAttrBtn:hover    { background: #218838; }
+#saveAttrBtn:disabled { background: #6ea8fe; cursor: not-allowed; }
 
 #saveStatus {
-    margin-top: 10px;
-    font-size: 13px;
+    font-size: 0.88em;
     min-height: 18px;
 }
-
-#saveStatus.success { color: #4caf50; }
-#saveStatus.error   { color: #e05c5c; }
+#saveStatus.success { color: #155724; }
+#saveStatus.error   { color: #dc3545; }
