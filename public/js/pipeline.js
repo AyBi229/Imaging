@@ -197,9 +197,12 @@
         statusDisplay.style.color = '#17a2b8';
         statusDisplay.textContent = 'Connecting via SSH and executing WP pipeline…';
 
+        const imageRole = document.querySelector('input[name="imageRole"]:checked')?.value || 'featured';
+
         const formData = new FormData();
         formData.append('image', activeBlob, `${sku}.webp`);
         formData.append('sku', sku);
+        formData.append('imageRole', imageRole);
 
         try {
             const res    = await fetch('/upload-to-wp', { method: 'POST', body: formData });
