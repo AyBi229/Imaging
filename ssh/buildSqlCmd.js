@@ -25,7 +25,7 @@ fi
 $MYSQL "DELETE FROM wp_posts WHERE post_name='${postSlug}' AND post_type='attachment';"
 
 # Insert the attachment row — all NOT NULL fields provided explicitly
-$MYSQL "INSERT INTO wp_posts (post_author, post_date, post_date_gmt, post_content, post_excerpt, post_title, post_status, comment_status, ping_status, post_name, to_ping, pinged, post_modified, post_modified_gmt, post_content_filtered, post_type, post_mime_type) VALUES (1, NOW(), NOW(), '', '', '${sku}', 'inherit', 'closed', 'closed', '${postSlug}', '', '', NOW(), NOW(), '', 'attachment', 'image/webp');"
+$MYSQL "INSERT INTO wp_posts (post_author, post_date, post_date_gmt, post_content, post_excerpt, post_title, post_status, comment_status, ping_status, post_name, to_ping, pinged, post_modified, post_modified_gmt, post_content_filtered, post_type, post_mime_type, guid) VALUES (1, NOW(), NOW(), '', '', '${sku}', 'inherit', 'closed', 'closed', '${postSlug}', '', '', NOW(), NOW(), '', 'attachment', 'image/webp', 'https://store.local/wp-content/uploads/${relativeWpPath}');"
 
 # Fetch the attachment ID by post_name — avoids LAST_INSERT_ID() cross-session issues
 ATTACHMENT_ID=$($MYSQL "SELECT ID FROM wp_posts WHERE post_name='${postSlug}' AND post_type='attachment' ORDER BY ID DESC LIMIT 1;")
