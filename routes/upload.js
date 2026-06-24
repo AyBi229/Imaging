@@ -31,7 +31,10 @@ const imageRole = req.body.imageRole || 'featured';
         const conn = new Client();
 
         conn.on('ready', () => {
-            const fileName = file.originalname;
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const fileName = `${year}/${month}/${file.originalname}`;
             const sqlCmd = buildSqlCmd(sku, postSlug, fileName, imageRole);
 
             conn.exec(sqlCmd, (execErr, stream) => {
