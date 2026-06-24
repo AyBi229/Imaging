@@ -1,6 +1,6 @@
 const { DB_CONFIG } = require('../config');
 
-function buildSqlCmd(sku, postSlug, relativeWpPath) {
+function buildSqlCmd(sku, postSlug, relativeWpPath, imageRole = 'featured') {
     return `
 MYCNF=$(mktemp /tmp/my.cnf.XXXXXX)
 cat > "$MYCNF" << 'MYCNF_EOF'
@@ -39,11 +39,23 @@ fi
 # Save the file path metadata
 $MYSQL "INSERT INTO wp_postmeta (post_id, meta_key, meta_value) VALUES ($ATTACHMENT_ID, '_wp_attached_file', '${relativeWpPath}') ON DUPLICATE KEY UPDATE meta_value='${relativeWpPath}';"
 
-# THE FIX: Wipe out any old duplicate zombie thumbnail links for this product first
+${imageRole === 'gallery' ? `
+# Replace the first image in the product gallery
+GALLERY=$($MYSQL "SELECT meta_value FROM wp_postmeta WHERE post_id = $PRODUCT_ID AND meta_key = '_product_image_gallery' LIMIT 1;")
+if [ -z "$GALLERY" ]; then
+    # No gallery yet — create one with this image
+    $MYSQL "INSERT INTO wp_postmeta (post_id, meta_key, meta_value) VALUES ($PRODUCT_ID, '_product_image_gallery', '$ATTACHMENT_ID') ON DUPLICATE KEY UPDATE meta_value='$ATTACHMENT_ID';"
+else
+    # Replace only the first ID in the comma-separated gallery list
+    NEW_GALLERY=$(echo "$GALLERY" | sed "s/^[0-9]*/$ATTACHMENT_ID/")
+    $MYSQL "UPDATE wp_postmeta SET meta_value='$NEW_GALLERY' WHERE post_id=$PRODUCT_ID AND meta_key='_product_image_gallery';"
+fi
+` : `
+# Wipe out any old duplicate zombie thumbnail links for this product first
 $MYSQL "DELETE FROM wp_postmeta WHERE post_id = $PRODUCT_ID AND meta_key = '_thumbnail_id';"
-
 # Now bind the clean, solitary thumbnail image reference safely
 $MYSQL "INSERT INTO wp_postmeta (post_id, meta_key, meta_value) VALUES ($PRODUCT_ID, '_thumbnail_id', '$ATTACHMENT_ID');"
+`}
 
 rm -f "$MYCNF"
 echo "SUCCESS:$PRODUCT_ID"

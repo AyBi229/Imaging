@@ -11,6 +11,7 @@ function handleError(res, conn, err) {
 async function uploadToWp(req, res) {
     const file = req.file;
     const sku = req.body.sku;
+const imageRole = req.body.imageRole || 'featured';
 
     if (!file || !sku) {
         return res.status(400).json({ success: false, error: 'Missing file or SKU data.' });
@@ -31,7 +32,7 @@ async function uploadToWp(req, res) {
 
         conn.on('ready', () => {
             const fileName = file.originalname;
-            const sqlCmd = buildSqlCmd(sku, postSlug, fileName);
+            const sqlCmd = buildSqlCmd(sku, postSlug, fileName, imageRole);
 
             conn.exec(sqlCmd, (execErr, stream) => {
                 if (execErr) return handleError(res, conn, execErr);
