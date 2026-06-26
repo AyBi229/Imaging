@@ -70,7 +70,18 @@ async function uploadDocToStore(req, res) {
         const parsed = new URL(url);
         const transport = parsed.protocol === 'https:' ? https : http;
         fileBuffer = await new Promise((resolve, reject) => {
-            transport.get(url, (resp) => {
+            const options = {
+                hostname: parsed.hostname,
+                path: parsed.pathname + parsed.search,
+                method: 'GET',
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Accept': 'application/pdf,application/octet-stream,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'Referer': 'https://www.google.com/',
+                },
+            };
+            transport.request(options, (resp) => {
                 if (resp.statusCode !== 200) {
                     return reject(new Error(`Fetch failed: HTTP ${resp.statusCode}`));
                 }
@@ -78,7 +89,7 @@ async function uploadDocToStore(req, res) {
                 resp.on('data', d => chunks.push(d));
                 resp.on('end', () => resolve(Buffer.concat(chunks)));
                 resp.on('error', reject);
-            }).on('error', reject);
+            }).on('error', reject).end();
         });
         fileName = (name || decodeURIComponent(parsed.pathname.split('/').pop()) || 'document.pdf')
             .replace(/[^\w.\-]/g, '_');
