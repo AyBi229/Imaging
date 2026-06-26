@@ -60,39 +60,45 @@ async function uploadDocToStore(req, res) {
         return res.status(400).json({ success: false, error: 'Missing file or SKU data.' });
     }
 
-    // Fetch the PDF bytes server-side (avoids browser CORS issues, mirrors /proxy-image pattern)
     let fileBuffer;
     let fileName;
     try {
-        const https = require('https');
-        const http  = require('http');
-        const { URL } = require('url');
-        const parsed = new URL(url);
-        const transport = parsed.protocol === 'https:' ? https : http;
-        fileBuffer = await new Promise((resolve, reject) => {
-            const options = {
-                hostname: parsed.hostname,
-                path: parsed.pathname + parsed.search,
-                method: 'GET',
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                    'Accept': 'application/pdf,application/octet-stream,*/*;q=0.8',
-                    'Accept-Language': 'en-US,en;q=0.9',
-                    'Referer': 'https://www.google.com/',
-                },
-            };
-            transport.request(options, (resp) => {
-                if (resp.statusCode !== 200) {
-                    return reject(new Error(`Fetch failed: HTTP ${resp.statusCode}`));
-                }
-                const chunks = [];
-                resp.on('data', d => chunks.push(d));
-                resp.on('end', () => resolve(Buffer.concat(chunks)));
-                resp.on('error', reject);
-            }).on('error', reject).end();
-        });
-        fileName = (name || decodeURIComponent(parsed.pathname.split('/').pop()) || 'document.pdf')
-            .replace(/[^\w.\-]/g, '_');
+        // If a file was uploaded manually, use it directly
+        if (req.file) {
+            fileBuffer = req.file.buffer;
+            fileName = (req.file.originalname || name || 'document.pdf').replace(/[^\w.\-]/g, '_');
+        } else {
+            // Otherwise fetch from URL as before
+            const https = require('https');
+            const http  = require('http');
+            const { URL } = require('url');
+            const parsed = new URL(url);
+            const transport = parsed.protocol === 'https:' ? https : http;
+            fileBuffer = await new Promise((resolve, reject) => {
+                const options = {
+                    hostname: parsed.hostname,
+                    path: parsed.pathname + parsed.search,
+                    method: 'GET',
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Accept': 'application/pdf,application/octet-stream,*/*;q=0.8',
+                        'Accept-Language': 'en-US,en;q=0.9',
+                        'Referer': 'https://www.google.com/',
+                    },
+                };
+                transport.request(options, (resp) => {
+                    if (resp.statusCode !== 200) {
+                        return reject(new Error(`Fetch failed: HTTP ${resp.statusCode}`));
+                    }
+                    const chunks = [];
+                    resp.on('data', d => chunks.push(d));
+                    resp.on('end', () => resolve(Buffer.concat(chunks)));
+                    resp.on('error', reject);
+                }).on('error', reject).end();
+            });
+            fileName = (name || decodeURIComponent(new URL(url).pathname.split('/').pop()) || 'document.pdf')
+                .replace(/[^\w.\-]/g, '_');
+        }
     } catch (fetchErr) {
         return res.status(502).json({ success: false, error: `Could not fetch PDF: ${fetchErr.message}` });
     }

@@ -11,24 +11,24 @@
  */
 
 (function () {
-    const skuInput     = document.getElementById('skuSearchInput');
-    const searchBtn    = document.getElementById('searchBtn');
+    const skuInput = document.getElementById('skuSearchInput');
+    const searchBtn = document.getElementById('searchBtn');
     const searchStatus = document.getElementById('searchStatus');
-    const imageGrid    = document.getElementById('imageGrid');
-    const gridWrap     = document.getElementById('gridWrap');
-    const confirmBar   = document.getElementById('confirmBar');
+    const imageGrid = document.getElementById('imageGrid');
+    const gridWrap = document.getElementById('gridWrap');
+    const confirmBar = document.getElementById('confirmBar');
     const confirmThumb = document.getElementById('confirmThumb');
-    const confirmBtn   = document.getElementById('confirmBtn');
+    const confirmBtn = document.getElementById('confirmBtn');
     const copyImageBtn = document.getElementById('copyImageBtn');
 
-    let selectedUrl  = null;
-    let activeTab    = 'images'; // 'images' | 'docs'
+    let selectedUrl = null;
+    let activeTab = 'images'; // 'images' | 'docs'
     let cachedImages = [];
-    let cachedDocs   = [];
+    let cachedDocs = [];
 
     /* ── Inject tab bar + doc list container (once) ── */
     const tabBar = document.createElement('div');
-    tabBar.id        = 'skuTabBar';
+    tabBar.id = 'skuTabBar';
     tabBar.innerHTML = `
         <button class="sku-tab active" data-tab="images">🖼 Images</button>
         <button class="sku-tab"        data-tab="docs">📄 Docs</button>
@@ -41,7 +41,7 @@
     imageGrid.parentNode.insertBefore(tabBar, imageGrid);
 
     const docList = document.createElement('div');
-    docList.id         = 'skuDocList';
+    docList.id = 'skuDocList';
     docList.style.cssText = 'display:none;';
     imageGrid.parentNode.insertBefore(docList, imageGrid.nextSibling);
 
@@ -121,6 +121,25 @@
             padding: 12px 0;
             text-align: center;
         }
+        .sku-doc-manual-upload {
+            width: 100%;
+            margin-top: 8px;
+            padding: 8px 10px;
+            background: #fff8e1;
+            border: 1px dashed #ffc107;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        .sku-doc-manual-label {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            cursor: pointer;
+        }
+        .sku-doc-manual-input {
+            font-size: 0.8rem;
+}
     `;
     document.head.appendChild(style);
 
@@ -131,16 +150,16 @@
     }
 
     function resetAll() {
-        gridWrap.innerHTML     = '';
-        docList.innerHTML      = '';
-        confirmBar.style.display   = 'none';
+        gridWrap.innerHTML = '';
+        docList.innerHTML = '';
+        confirmBar.style.display = 'none';
         copyImageBtn.style.display = 'none';
         copyImageBtn.classList.remove('copied');
-        selectedUrl  = null;
+        selectedUrl = null;
         cachedImages = [];
-        cachedDocs   = [];
+        cachedDocs = [];
         imageGrid.style.display = 'none';
-        docList.style.display   = 'none';
+        docList.style.display = 'none';
         tabBar.classList.remove('visible');
     }
 
@@ -156,12 +175,12 @@
     function showActiveTab() {
         if (activeTab === 'images') {
             imageGrid.style.display = cachedImages.length ? 'block' : 'none';
-            docList.style.display   = 'none';
+            docList.style.display = 'none';
             // Re-sync confirm bar visibility
             confirmBar.style.display = selectedUrl ? 'flex' : 'none';
         } else {
             imageGrid.style.display = 'none';
-            docList.style.display   = 'block';
+            docList.style.display = 'block';
             confirmBar.style.display = 'none';
             copyImageBtn.style.display = 'none';
         }
@@ -181,10 +200,10 @@
         searchBtn.disabled = false;
 
         cachedImages = imagesResult.status === 'fulfilled' ? imagesResult.value : [];
-        cachedDocs   = docsResult.status   === 'fulfilled' ? docsResult.value   : [];
+        cachedDocs = docsResult.status === 'fulfilled' ? docsResult.value : [];
 
         const hasImages = cachedImages.length > 0;
-        const hasDocs   = cachedDocs.length   > 0;
+        const hasDocs = cachedDocs.length > 0;
 
         if (!hasImages && !hasDocs) {
             setStatus('No images or documents found for this SKU.', '#dc3545');
@@ -194,7 +213,7 @@
         tabBar.classList.add('visible');
 
         if (hasImages) renderImageGrid(cachedImages);
-        if (hasDocs)   renderDocList(cachedDocs);
+        if (hasDocs) renderDocList(cachedDocs);
 
         // Default to the tab that has results; prefer images
         activeTab = hasImages ? 'images' : 'docs';
@@ -204,15 +223,15 @@
         showActiveTab();
 
         const imgLabel = hasImages ? `${cachedImages.length} image${cachedImages.length !== 1 ? 's' : ''}` : 'no images';
-        const docLabel = hasDocs   ? `${cachedDocs.length} doc${cachedDocs.length !== 1 ? 's' : ''}`       : 'no docs';
+        const docLabel = hasDocs ? `${cachedDocs.length} doc${cachedDocs.length !== 1 ? 's' : ''}` : 'no docs';
         setStatus(`Found ${imgLabel} and ${docLabel} — click a tab to browse.`);
     }
 
     async function fetchImages(sku) {
         const res = await fetch('/search-product-images', {
-            method:  'POST',
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ sku }),
+            body: JSON.stringify({ sku }),
         });
         if (!res.ok) throw new Error(`Images: server error ${res.status}`);
         const data = await res.json();
@@ -221,9 +240,9 @@
 
     async function fetchDocs(sku) {
         const res = await fetch('/search-product-docs', {
-            method:  'POST',
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ sku }),
+            body: JSON.stringify({ sku }),
         });
         if (!res.ok) throw new Error(`Docs: server error ${res.status}`);
         const data = await res.json();
@@ -240,13 +259,13 @@
             thumb.title = `Image ${i + 1}`;
 
             const check = document.createElement('span');
-            check.className   = 'check';
+            check.className = 'check';
             check.textContent = '✓';
 
-            const img  = document.createElement('img');
-            img.alt     = `Result ${i + 1}`;
+            const img = document.createElement('img');
+            img.alt = `Result ${i + 1}`;
             img.loading = 'lazy';
-            img.src     = `/proxy-image?url=${encodeURIComponent(imgUrl)}`;
+            img.src = `/proxy-image?url=${encodeURIComponent(imgUrl)}`;
             img.onerror = () => {
                 img.src = `https://placehold.co/200x200/dee2e6/868e96?text=${i + 1}`;
             };
@@ -262,9 +281,9 @@
         document.querySelectorAll('.grid-thumb').forEach(t => t.classList.remove('selected'));
         thumbEl.classList.add('selected');
         selectedUrl = url;
-        confirmThumb.src     = `/proxy-image?url=${encodeURIComponent(url)}`;
+        confirmThumb.src = `/proxy-image?url=${encodeURIComponent(url)}`;
         confirmThumb.onerror = () => { confirmThumb.src = ''; };
-        confirmBar.style.display   = 'flex';
+        confirmBar.style.display = 'flex';
         copyImageBtn.style.display = 'none';
         copyImageBtn.classList.remove('copied');
     }
@@ -275,7 +294,7 @@
 
         if (!docs.length) {
             const empty = document.createElement('p');
-            empty.className   = 'sku-doc-empty';
+            empty.className = 'sku-doc-empty';
             empty.textContent = 'No documents found for this SKU.';
             docList.appendChild(empty);
             return;
@@ -283,13 +302,13 @@
 
         docs.forEach((doc, i) => {
             // Support both { name, url } objects and bare URL strings
-            const url  = typeof doc === 'string' ? doc : doc.url;
+            const url = typeof doc === 'string' ? doc : doc.url;
             const name = typeof doc === 'string'
                 ? decodeURIComponent(url.split('/').pop() || `Document ${i + 1}`)
                 : (doc.name || decodeURIComponent(url.split('/').pop() || `Document ${i + 1}`));
 
             const isPdf = /\.pdf$/i.test(url) || /pdf/i.test(name);
-            const icon  = isPdf ? '📄' : '📎';
+            const icon = isPdf ? '📄' : '📎';
 
             const item = document.createElement('div');
             item.className = 'sku-doc-item';
@@ -314,7 +333,7 @@
             return;
         }
 
-        btn.disabled    = true;
+        btn.disabled = true;
         btn.textContent = 'Uploading…';
 
         try {
@@ -333,8 +352,50 @@
             setStatus(data.message || `Linked document to SKU ${sku}.`, '#28a745');
         } catch (err) {
             btn.textContent = '⚠️ Failed — retry';
-            btn.disabled     = false;
+            btn.disabled = false;
             setStatus(`Document upload failed: ${err.message}`, '#dc3545');
+
+            // Show manual upload fallback
+            const existing = btn.parentElement.querySelector('.sku-doc-manual-upload');
+            if (!existing) {
+                const fallback = document.createElement('div');
+                fallback.className = 'sku-doc-manual-upload';
+                fallback.innerHTML = `
+            <label class="sku-doc-manual-label">
+                Can't fetch automatically — download it manually then upload here:
+                <input type="file" accept="application/pdf" class="sku-doc-manual-input" />
+            </label>
+        `;
+                btn.parentElement.appendChild(fallback);
+
+                fallback.querySelector('.sku-doc-manual-input').addEventListener('change', async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const sku = skuInput.value.trim();
+                    btn.textContent = 'Uploading…';
+                    btn.disabled = true;
+                    try {
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        formData.append('sku', sku);
+                        formData.append('name', file.name);
+                        formData.append('url', url); // preserve source url for the TSV
+                        const res = await fetch('/upload-doc-to-store', {
+                            method: 'POST',
+                            body: formData,
+                        });
+                        const data = await res.json();
+                        if (!data.success) throw new Error(data.error || 'Upload failed.');
+                        btn.textContent = '✅ Uploaded';
+                        fallback.remove();
+                        setStatus(data.message || `Linked document to SKU ${sku}.`, '#28a745');
+                    } catch (uploadErr) {
+                        btn.textContent = '⚠️ Failed — retry';
+                        btn.disabled = false;
+                        setStatus(`Manual upload failed: ${uploadErr.message}`, '#dc3545');
+                    }
+                });
+            }
         }
     }
 
@@ -347,7 +408,7 @@
     /* ── Confirm: send image straight to the crop pipeline ── */
     confirmBtn.addEventListener('click', async () => {
         if (!selectedUrl) return;
-        confirmBtn.disabled    = true;
+        confirmBtn.disabled = true;
         confirmBtn.textContent = 'Loading…';
         try {
             // Pre-check dimensions via a quick Image load through the proxy
@@ -379,7 +440,7 @@
         } catch (err) {
             setStatus(`Failed: ${err.message}`, '#dc3545');
         } finally {
-            confirmBtn.disabled    = false;
+            confirmBtn.disabled = false;
             confirmBtn.textContent = 'Use this image ↓';
         }
     });
@@ -413,7 +474,7 @@
             const url = URL.createObjectURL(blob);
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                canvas.width  = img.naturalWidth;
+                canvas.width = img.naturalWidth;
                 canvas.height = img.naturalHeight;
                 canvas.getContext('2d').drawImage(img, 0, 0);
                 URL.revokeObjectURL(url);
